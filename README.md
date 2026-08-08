@@ -1,5 +1,12 @@
 # MotionCraft
 
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vite.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![No backend](https://img.shields.io/badge/backend-none-22C55E)](#)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KrishBahukhandi/MotionCraft)
+
 A professional, browser-based **CSS Animation Studio**. Design on a Figma-style canvas, refine on an After Effects-style timeline, and export production-ready code — CSS, SCSS, Tailwind, React, Vue, Svelte, Angular, styled-components, Emotion, Web Components, or standalone HTML.
 
 **No login. No backend. Everything stays local.** Scenes autosave to `localStorage`.
@@ -12,6 +19,19 @@ npm run dev
 ```
 
 Routes: `/` landing page · `/studio` the editor.
+
+## Deploy
+
+The app is a static SPA — no environment variables, no server. `vercel.json` sets the
+Vite build, the SPA rewrite that keeps `/studio` working on refresh, and immutable
+cache headers for Vite's hashed assets.
+
+```bash
+npx vercel --prod
+```
+
+Or import the repo at [vercel.com/new](https://vercel.com/new) — the settings are picked
+up from `vercel.json` automatically.
 
 ## Features
 
