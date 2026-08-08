@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MotionCraft — The CSS Animation Studio</title>
+    <meta name="description" content="Design production-ready CSS animations visually. Timeline, keyframes, bezier curves, presets and one-click export to CSS, React, Vue, Svelte, Tailwind and more. Free, local, no login." />
+    <meta property="og:title" content="MotionCraft — The CSS Animation Studio" />
+    <meta property="og:description" content="A professional browser-based animation studio. Design on a canvas, refine on a timeline, ship production-ready CSS." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0b0c10" />
+    <script>
+      // Apply theme before paint to avoid flash
+      try {
+        var t = localStorage.getItem('mc-theme') || 'system';
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
