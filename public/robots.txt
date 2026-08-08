@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://motioncraft.bahukhandi-labs.com/sitemap.xml
