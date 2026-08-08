@@ -5,6 +5,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vite.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![No backend](https://img.shields.io/badge/backend-none-22C55E)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KrishBahukhandi/MotionCraft)
 
 A professional, browser-based **CSS Animation Studio**. Design on a Figma-style canvas, refine on an After Effects-style timeline, and export production-ready code — CSS, SCSS, Tailwind, React, Vue, Svelte, Angular, styled-components, Emotion, Web Components, or standalone HTML.
@@ -74,3 +75,9 @@ The animation engine (`src/lib`) is dependency-free and UI-agnostic:
 | `presets.ts` | 60+ presets as declarative stop lists |
 
 Because everything animatable is a `NodeBase`, adding a new node kind or a new animatable property requires no changes to the timeline, inspector or generator.
+
+## License
+
+[MIT](LICENSE) © Krish Bahukhandi
+
+Animations you create and export are yours — the license covers this source code, not your output.
