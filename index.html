@@ -4,12 +4,139 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MotionCraft — The CSS Animation Studio</title>
-    <meta name="description" content="Design production-ready CSS animations visually. Timeline, keyframes, bezier curves, presets and one-click export to CSS, React, Vue, Svelte, Tailwind and more. Free, local, no login." />
-    <meta property="og:title" content="MotionCraft — The CSS Animation Studio" />
-    <meta property="og:description" content="A professional browser-based animation studio. Design on a canvas, refine on a timeline, ship production-ready CSS." />
-    <meta property="og:type" content="website" />
+
+    <title>MotionCraft — Free Visual CSS Animation Generator &amp; Studio</title>
+    <meta
+      name="description"
+      content="Create CSS animations visually — no code. Drag on a canvas, keyframe on a timeline, edit bezier curves, and export production-ready CSS, SCSS, Tailwind, React, Vue, Svelte or Angular. Free, runs in your browser, no login."
+    />
+    <link rel="canonical" href="https://motioncraft.bahukhandi-labs.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="author" content="Krish Bahukhandi" />
     <meta name="theme-color" content="#0b0c10" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="MotionCraft" />
+    <meta property="og:title" content="MotionCraft — Free Visual CSS Animation Generator &amp; Studio" />
+    <meta
+      property="og:description"
+      content="Design CSS animations on a canvas and timeline, then export production-ready code for CSS, React, Vue, Svelte, Tailwind and more. Free, local, no login."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://motioncraft.bahukhandi-labs.com/" />
+    <meta property="og:image" content="https://motioncraft.bahukhandi-labs.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MotionCraft — design CSS animations like a pro" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MotionCraft — Free Visual CSS Animation Generator &amp; Studio" />
+    <meta
+      name="twitter:description"
+      content="Design CSS animations on a canvas and timeline, then export production-ready code. Free, local, no login."
+    />
+    <meta name="twitter:image" content="https://motioncraft.bahukhandi-labs.com/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://motioncraft.bahukhandi-labs.com/#website",
+            "url": "https://motioncraft.bahukhandi-labs.com/",
+            "name": "MotionCraft",
+            "description": "Free visual CSS animation generator and studio.",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://motioncraft.bahukhandi-labs.com/#app",
+            "name": "MotionCraft",
+            "url": "https://motioncraft.bahukhandi-labs.com/",
+            "applicationCategory": "DesignApplication",
+            "applicationSubCategory": "CSS animation editor",
+            "operatingSystem": "Any (web browser)",
+            "browserRequirements": "Requires JavaScript and a modern browser",
+            "description": "A browser-based CSS animation studio. Design on a canvas, refine on a timeline with keyframes and bezier easing, and export production-ready CSS, SCSS, Tailwind, React, Vue, Svelte, Angular, styled-components, Emotion, Web Components or HTML.",
+            "screenshot": "https://motioncraft.bahukhandi-labs.com/og-image.png",
+            "softwareVersion": "0.1.0",
+            "license": "https://opensource.org/licenses/MIT",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "featureList": [
+              "Visual canvas with pan, zoom and smart snapping",
+              "Keyframe timeline with per-property tracks",
+              "Cubic-bezier curve editor with spring and bounce easing",
+              "Nested animatable groups",
+              "SVG path draw-on and motion-path animation",
+              "Animatable clip-path and mask reveals",
+              "CSS variable bindings",
+              "60+ animation presets",
+              "Export to 11 formats including CSS, Tailwind, React and Vue",
+              "prefers-reduced-motion and WCAG flash warnings"
+            ],
+            "author": {
+              "@type": "Person",
+              "name": "Krish Bahukhandi"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://motioncraft.bahukhandi-labs.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is it really free? What's the catch?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Free, no account, no server. Everything runs and stays in your browser — your scenes autosave to localStorage."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Where do my files go?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Nowhere. MotionCraft has no backend. Your work is saved locally in your browser and exported files download straight to your machine."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the generated CSS production-ready?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. It favors transform and opacity, includes per-segment timing functions, bakes physics-based easings into keyframes, and can wrap everything in a prefers-reduced-motion guard."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do springs and bounces work in pure CSS?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "CSS timing functions cannot express oscillation, so MotionCraft samples the physics curve and bakes it into intermediate keyframes — identical motion, zero JavaScript."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use it for commercial projects?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Everything you create and export is yours, no attribution required."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
     <script>
       // Apply theme before paint to avoid flash
       try {

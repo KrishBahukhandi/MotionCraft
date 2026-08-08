@@ -36,6 +36,11 @@ import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
 import { IconButton, Tabs, ToastHost } from '@/components/ui/primitives'
 import { Logo } from '@/components/ui/Logo'
+import { Seo } from '@/components/Seo'
+
+const STUDIO_TITLE = 'Studio — Visual CSS Animation Editor | MotionCraft'
+const STUDIO_DESCRIPTION =
+  'The MotionCraft editor: animate on a canvas and timeline with keyframes, bezier easing and 60+ presets, then export production-ready CSS, React, Vue, Svelte or Tailwind. Free, no login.'
 
 const TOOLS: { type: ElementType; label: string; icon: typeof Square }[] = [
   { type: 'rect', label: 'Rectangle', icon: Square },
@@ -62,13 +67,19 @@ export function Studio() {
   const deviceOn = useStudio((st) => st.device.on)
 
   useEffect(() => {
-    document.title = `${docName} — MotionCraft`
+    // An untouched scene would otherwise index as "Untitled Motion — MotionCraft",
+    // which is a meaningless search result; only reflect a name the user chose.
+    document.title =
+      docName && docName !== 'Untitled Motion'
+        ? `${docName} — MotionCraft`
+        : STUDIO_TITLE
   }, [docName])
 
   return (
     // The studio needs elbow room; below ~1040px scroll horizontally rather
     // than letting the side panels get clipped.
     <div className="h-screen overflow-x-auto overflow-y-hidden bg-bg">
+    <Seo title={STUDIO_TITLE} description={STUDIO_DESCRIPTION} path="/studio" />
     <div className="flex h-full min-w-[1040px] flex-col overflow-hidden bg-bg">
       {/* top bar */}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-edge/10 bg-panel px-3">

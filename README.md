@@ -34,6 +34,26 @@ npx vercel --prod
 Or import the repo at [vercel.com/new](https://vercel.com/new) — the settings are picked
 up from `vercel.json` automatically.
 
+## SEO
+
+The landing page is **prerendered to static HTML at build time**, so crawlers (and the
+first paint) get the full ~1,500 words without executing JavaScript:
+
+```
+vite build                        # client bundle
+vite build --ssr entry-server     # server bundle
+node scripts/prerender.mjs        # render / and inline it into dist/index.html
+```
+
+`main.tsx` calls `hydrateRoot` when that markup is present and `createRoot` otherwise, so
+`npm run dev` is unaffected. Also in place: canonical URLs, Open Graph and Twitter cards,
+`sitemap.xml` / `robots.txt`, and JSON-LD for `WebSite`, `SoftwareApplication` and `FAQPage`.
+Above-the-fold content renders visible rather than fading in, so it isn't excluded from LCP.
+
+`npm run og` regenerates `public/og-image.png` from the SVG in `scripts/og-image.mjs`. It is
+kept out of `build` on purpose — `sharp` is a native dependency and shouldn't be able to
+break a deploy.
+
 ## Features
 
 **Canvas** — infinite pan/zoom, marquee & multi-select, drag/resize/rotate handles, smart snapping guides, Figma-style group drilling (click selects the group, click again selects the member).

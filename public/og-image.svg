@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0c10"/>
+      <stop offset="1" stop-color="#16172099"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8b7bff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.2" cy="0.1" r="0.6">
+      <stop offset="0" stop-color="#8b7bff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#8b7bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.85" cy="0.15" r="0.5">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#0b0c10"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <!-- logo mark -->
+  <rect x="80" y="72" width="72" height="72" rx="20" fill="url(#brand)"/>
+  <path d="M99 128 L112 96 L123 118 L131 102 L144 128" fill="none" stroke="#fff"
+        stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="172" y="124" font-family="Inter, Helvetica, Arial, sans-serif" font-size="38"
+        font-weight="700" fill="#e7e9ee">MotionCraft</text>
+
+  <text x="80" y="286" font-family="Inter, Helvetica, Arial, sans-serif" font-size="82"
+        font-weight="800" fill="#ffffff" letter-spacing="-2">Design CSS animations</text>
+  <text x="80" y="386" font-family="Inter, Helvetica, Arial, sans-serif" font-size="82"
+        font-weight="800" fill="url(#brand)" letter-spacing="-2">like a pro.</text>
+
+  <text x="80" y="452" font-family="Inter, Helvetica, Arial, sans-serif" font-size="30"
+        fill="#8b90a0">Canvas · timeline · keyframes · bezier curves — exported as production CSS</text>
+
+  <!-- timeline motif -->
+  <rect x="80" y="516" width="1040" height="10" rx="5" fill="#ffffff" opacity="0.08"/>
+  <rect x="80" y="516" width="430" height="10" rx="5" fill="url(#brand)" opacity="0.85"/>
+  <rect x="201" y="512" width="18" height="18" rx="4" fill="#f5b83d" transform="rotate(45 210 521)"/>
+  <rect x="391" y="512" width="18" height="18" rx="4" fill="#f5b83d" transform="rotate(45 400 521)"/>
+  <rect x="611" y="512" width="18" height="18" rx="4" fill="#f5b83d" transform="rotate(45 620 521)"/>
+  <rect x="821" y="512" width="18" height="18" rx="4" fill="#f5b83d" transform="rotate(45 830 521)"/>
+
+  <text x="80" y="586" font-family="Inter, Helvetica, Arial, sans-serif" font-size="24"
+        fill="#6e7486">Free · no login · runs entirely in your browser</text>
+</svg>

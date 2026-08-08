@@ -27,6 +27,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { CodeBlock } from '@/lib/highlight'
 import { PRESETS } from '@/lib/presets'
 import { Kbd } from '@/components/ui/primitives'
+import { Seo } from '@/components/Seo'
 
 /**
  * Scroll-reveal that never leaves content invisible: uses a plain
@@ -37,13 +38,20 @@ function FadeIn({
   children,
   delay = 0,
   className,
+  immediate = false,
 }: {
   children: ReactNode
   delay?: number
   className?: string
+  /**
+   * Render visible from the first paint. Used for above-the-fold content: a
+   * prerendered `opacity: 0` would push Largest Contentful Paint out until the
+   * JS bundle has loaded and the reveal effect has run.
+   */
+  immediate?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [seen, setSeen] = useState(false)
+  const [seen, setSeen] = useState(immediate)
 
   useEffect(() => {
     if (seen) return
@@ -69,6 +77,14 @@ function FadeIn({
     }
   }, [seen])
 
+  if (immediate) {
+    return (
+      <div ref={ref} className={className}>
+        {children}
+      </div>
+    )
+  }
+
   return (
     <motion.div
       ref={ref}
@@ -82,11 +98,16 @@ function FadeIn({
   )
 }
 
+export const LANDING_TITLE = 'MotionCraft — Free Visual CSS Animation Generator & Studio'
+export const LANDING_DESCRIPTION =
+  'Create CSS animations visually — no code. Drag on a canvas, keyframe on a timeline, edit bezier curves, and export production-ready CSS, SCSS, Tailwind, React, Vue, Svelte or Angular. Free, runs in your browser, no login.'
+
 export function Landing() {
   const { isDark, cycle } = useTheme()
 
   return (
     <div className="min-h-screen bg-bg text-ink">
+      <Seo title={LANDING_TITLE} description={LANDING_DESCRIPTION} path="/" />
       {/* nav */}
       <nav className="sticky top-0 z-50 border-b border-edge/[0.07] bg-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5">
@@ -121,24 +142,24 @@ export function Landing() {
       <header className="mc-hero-glow relative overflow-hidden">
         <div className="mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-20 md:grid-cols-2 md:pt-28">
           <div className="flex flex-col items-start justify-center">
-            <FadeIn className="mb-5">
+            <FadeIn immediate className="mb-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-edge/10 bg-panel/70 px-3 py-1.5 text-xs font-medium text-mute backdrop-blur">
                 <Sparkles size={12} className="text-accent" />
                 Free forever · No login · 100% local
               </div>
             </FadeIn>
-            <FadeIn delay={0.05}>
+            <FadeIn immediate>
               <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
                 Design CSS animations <span className="mc-gradient-text">like a pro.</span>
               </h1>
             </FadeIn>
-            <FadeIn delay={0.1}>
+            <FadeIn immediate>
               <p className="mt-6 max-w-md text-pretty text-lg leading-relaxed text-mute">
                 A professional animation studio in your browser. Canvas, timeline, keyframes, bezier
                 curves — and production-ready CSS, React, Vue or Tailwind out the other end.
               </p>
             </FadeIn>
-            <FadeIn delay={0.15} className="mt-8">
+            <FadeIn immediate className="mt-8">
               <div className="flex flex-wrap items-center gap-3">
                 <Link
                   to="/studio"
@@ -155,22 +176,18 @@ export function Landing() {
                 </a>
               </div>
             </FadeIn>
-            <FadeIn delay={0.2} className="mt-8">
+            <FadeIn immediate className="mt-8">
               <div className="flex items-center gap-2 text-xs text-mute">
                 <Kbd>Space</Kbd> to play · <Kbd>⌘Z</Kbd> undo · <Kbd>K</Kbd> keyframe — it works like the tools you know
               </div>
             </FadeIn>
           </div>
 
-          {/* live demo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="relative"
-          >
+          {/* live demo — painted immediately; it is a large above-the-fold
+              block and a fade-in would make it the delayed LCP element */}
+          <div className="relative">
             <HeroDemo />
-          </motion.div>
+          </div>
         </div>
       </header>
 

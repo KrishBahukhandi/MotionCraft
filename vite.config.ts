@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react()],
   resolve: {
     alias: {
@@ -12,12 +12,16 @@ export default defineConfig({
   build: {
     target: 'es2020',
     rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          motion: ['framer-motion'],
-        },
-      },
+      // Vendor splitting applies to the browser bundle only — in the SSR build
+      // used for prerendering, react and friends are external.
+      output: isSsrBuild
+        ? {}
+        : {
+            manualChunks: {
+              vendor: ['react', 'react-dom', 'react-router-dom'],
+              motion: ['framer-motion'],
+            },
+          },
     },
   },
-})
+}))
