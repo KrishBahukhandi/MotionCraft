@@ -1,16 +1,16 @@
 import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
-import { Landing } from './components/landing/Landing'
+import { AppRoutes } from './App'
+export { SEO_PAGES } from './components/landing/SeoLandingPage'
 
 /**
- * Build-time render of the marketing page. Only the landing route is
- * prerendered — the studio is an application shell with nothing to index, and
- * lazy-loading it keeps the static payload small.
+ * Build-time render of each marketing route. The interactive studio is not
+ * prerendered because it is intentionally excluded from search indexing.
  */
 export function render(url: string): string {
   return renderToString(
     <StaticRouter location={url}>
-      <Landing />
+      <AppRoutes />
     </StaticRouter>
   )
 }

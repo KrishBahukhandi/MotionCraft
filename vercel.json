@@ -27,6 +27,15 @@
           "value": "public, max-age=86400"
         }
       ]
+    },
+    {
+      "source": "/studio",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
     }
   ]
 }

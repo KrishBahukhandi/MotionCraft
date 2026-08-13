@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, rmSync, existsSync, mkdirSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 
@@ -6,18 +6,59 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const templatePath = path.join(root, 'dist', 'index.html')
 const serverEntry = path.join(root, 'dist-ssr', 'entry-server.js')
 
-const { render } = await import(pathToFileURL(serverEntry).href)
+const { render, SEO_PAGES } = await import(pathToFileURL(serverEntry).href)
 
 const template = readFileSync(templatePath, 'utf-8')
-const appHtml = render('/')
-
 const marker = '<div id="root"></div>'
 if (!template.includes(marker)) {
   throw new Error('prerender: could not find the root container in dist/index.html')
 }
 
-const out = template.replace(marker, `<div id="root">${appHtml}</div>`)
-writeFileSync(templatePath, out)
+function jsonLd(page) {
+  const url = `https://motioncraft.bahukhandi-labs.com/${page.slug}`
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: page.title, description: page.description, inLanguage: 'en' },
+      { '@type': 'SoftwareApplication', name: 'MotionCraft', url: 'https://motioncraft.bahukhandi-labs.com/', applicationCategory: 'DesignApplication', operatingSystem: 'Any (web browser)', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+      { '@type': 'FAQPage', '@id': `${url}#faq`, mainEntity: page.faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) },
+    ],
+  })
+}
+
+function withPageMetadata(html, page) {
+  const url = `https://motioncraft.bahukhandi-labs.com/${page.slug}`
+  return html
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${page.title}</title>`)
+    .replace(/(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
+    .replace(/(<link\s+rel="canonical"\s+href=")[^"]*("\s*\/?>>)/, `$1${url}$2`)
+    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.title}$2`)
+    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
+    .replace(/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>>)/, `$1${url}$2`)
+    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.title}$2`)
+    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${jsonLd(page)}</script>`)
+}
+
+const homepageHtml = render('/')
+const homepage = template.replace(marker, `<div id="root">${homepageHtml}</div>`)
+writeFileSync(templatePath, homepage)
+
+for (const page of SEO_PAGES) {
+  const routeHtml = render(`/${page.slug}`)
+  const out = withPageMetadata(template.replace(marker, `<div id="root">${routeHtml}</div>`), page)
+  const routeDir = path.join(root, 'dist', page.slug)
+  mkdirSync(routeDir, { recursive: true })
+  writeFileSync(path.join(routeDir, 'index.html'), out)
+}
+
+const date = new Date().toISOString().slice(0, 10)
+const urls = [
+  { loc: 'https://motioncraft.bahukhandi-labs.com/', priority: '1.0' },
+  ...SEO_PAGES.map((page) => ({ loc: `https://motioncraft.bahukhandi-labs.com/${page.slug}`, priority: '0.8' })),
+]
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(({ loc, priority }) => `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${priority}</priority>\n  </url>`).join('\n')}\n</urlset>\n`
+writeFileSync(path.join(root, 'dist', 'sitemap.xml'), sitemap)
 
 // the SSR bundle is a build artifact, not something to deploy
 if (existsSync(path.join(root, 'dist-ssr'))) {
@@ -25,4 +66,4 @@ if (existsSync(path.join(root, 'dist-ssr'))) {
 }
 
 const kb = (s) => `${(Buffer.byteLength(s) / 1024).toFixed(1)} kB`
-console.log(`prerendered / → ${kb(appHtml)} of static HTML (index.html now ${kb(out)})`)
+console.log(`prerendered ${urls.length} marketing pages (homepage HTML: ${kb(homepageHtml)})`)

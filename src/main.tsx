@@ -1,12 +1,15 @@
 import React from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
-import App from './App'
+import { BrowserRouter } from 'react-router-dom'
+import { AppRoutes } from './App'
 import './index.css'
 
 const container = document.getElementById('root')!
 const tree = (
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   </React.StrictMode>
 )
 

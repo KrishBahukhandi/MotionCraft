@@ -208,6 +208,25 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Search-focused guides give visitors direct routes to common animation tasks. */}
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">Build the animation you need</h2>
+        <p className="mx-auto mt-4 max-w-xl text-center text-mute">Practical guides for common CSS animation workflows.</p>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ['/css-animation-generator', 'CSS animation generator', 'Create production-ready CSS motion visually.'],
+            ['/css-keyframe-generator', 'CSS keyframe generator', 'Build and edit @keyframes on a timeline.'],
+            ['/cubic-bezier-editor', 'Cubic-bezier editor', 'Design natural timing curves with live preview.'],
+            ['/tailwind-animation-generator', 'Tailwind animation generator', 'Export custom motion for Tailwind CSS.'],
+            ['/css-loading-animation-generator', 'CSS loading animation generator', 'Make smooth loaders and progress motion.'],
+          ].map(([to, title, desc]) => (
+            <Link key={to} to={to} className="rounded-2xl border border-edge/[0.08] bg-panel p-6 shadow-panel transition-colors hover:border-accent/40">
+              <h3 className="font-semibold">{title}</h3><p className="mt-2 text-[13.5px] leading-relaxed text-mute">{desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* features */}
       <section id="features" className="mx-auto max-w-6xl px-5 py-24">
         <FadeIn>

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Landing } from '@/components/landing/Landing'
+import { SeoLandingPage } from '@/components/landing/SeoLandingPage'
 
 const Studio = lazy(() =>
   import('@/components/studio/Studio').then((m) => ({ default: m.Studio }))
@@ -17,20 +18,27 @@ function StudioFallback() {
   )
 }
 
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/:slug" element={<SeoLandingPage />} />
+      <Route
+        path="/studio"
+        element={
+          <Suspense fallback={<StudioFallback />}>
+            <Studio />
+          </Suspense>
+        }
+      />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route
-          path="/studio"
-          element={
-            <Suspense fallback={<StudioFallback />}>
-              <Studio />
-            </Suspense>
-          }
-        />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   )
 }

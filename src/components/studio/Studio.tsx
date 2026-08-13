@@ -79,7 +79,7 @@ export function Studio() {
     // The studio needs elbow room; below ~1040px scroll horizontally rather
     // than letting the side panels get clipped.
     <div className="h-screen overflow-x-auto overflow-y-hidden bg-bg">
-    <Seo title={STUDIO_TITLE} description={STUDIO_DESCRIPTION} path="/studio" />
+    <Seo title={STUDIO_TITLE} description={STUDIO_DESCRIPTION} path="/studio" noindex />
     <div className="flex h-full min-w-[1040px] flex-col overflow-hidden bg-bg">
       {/* top bar */}
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-edge/10 bg-panel px-3">
