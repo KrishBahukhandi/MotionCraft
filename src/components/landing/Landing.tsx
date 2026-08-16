@@ -3,14 +3,18 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
+  Blocks,
   Check,
   Code2,
   Command,
+  FileCode2,
   Folder,
+  Link2,
   Gauge,
   Layers,
   MonitorSmartphone,
   MousePointer2,
+  MousePointerClick,
   Moon,
   PenTool,
   Scissors,
@@ -100,7 +104,7 @@ function FadeIn({
 
 export const LANDING_TITLE = 'MotionCraft — Free Visual CSS Animation Generator & Studio'
 export const LANDING_DESCRIPTION =
-  'Create CSS animations visually — no code. Drag on a canvas, keyframe on a timeline, edit bezier curves, and export production-ready CSS, SCSS, Tailwind, React, Vue, Svelte or Angular. Free, runs in your browser, no login.'
+  'Create CSS animations visually — or paste the CSS you already have and edit it. Canvas, timeline, keyframes, hover states and bezier curves, exported to CSS, Tailwind, React, Vue, Svelte and more. Free, runs in your browser, no login.'
 
 export function Landing() {
   const { isDark, cycle } = useTheme()
@@ -155,8 +159,8 @@ export function Landing() {
             </FadeIn>
             <FadeIn immediate>
               <p className="mt-6 max-w-md text-pretty text-lg leading-relaxed text-mute">
-                A professional animation studio in your browser. Canvas, timeline, keyframes, bezier
-                curves — and production-ready CSS, React, Vue or Tailwind out the other end.
+                Design on a canvas, refine on a timeline, ship production-ready CSS — or paste the
+                animation code you already have and edit it visually. Free, local, no login.
               </p>
             </FadeIn>
             <FadeIn immediate className="mt-8">
@@ -195,9 +199,9 @@ export function Landing() {
       <section className="border-y border-edge/[0.07] bg-panel/50">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 py-8 text-center md:grid-cols-4">
           {[
-            ['60+', 'motion presets'],
-            ['11', 'export formats'],
-            ['60fps', 'GPU-friendly output'],
+            ['58', 'motion presets'],
+            ['14', 'ready components'],
+            ['12', 'export formats'],
             ['0', 'accounts required'],
           ].map(([big, small]) => (
             <div key={small}>
@@ -271,7 +275,7 @@ export function Landing() {
                 <code className="rounded bg-edge/10 px-1.5 py-0.5 font-mono text-[12px]">@keyframes</code> —
                 with per-segment timing functions, baked spring physics, and an automatic
                 reduced-motion guard. Copy it, or export straight to React, Vue, Svelte, Angular,
-                Tailwind, styled-components and more.
+                Tailwind v4, styled-components and more.
               </p>
             </FadeIn>
             <FadeIn>
@@ -279,10 +283,10 @@ export function Landing() {
                 {[
                   'GPU-accelerated transforms only — no layout thrashing',
                   'Bounce, elastic & spring baked into pure CSS',
+                  'Hover and press states compiled to transition, not keyframes',
                   'Groups export as nested markup with cascading transforms',
                   'Design tokens emitted as :root variables',
-                  'prefers-reduced-motion handled for you',
-                  'WCAG flash warnings before you ship',
+                  'prefers-reduced-motion guards animation and transition',
                 ].map((li) => (
                   <li key={li} className="flex items-start gap-2.5">
                     <Check size={16} className="mt-0.5 shrink-0 text-accent" />
@@ -310,7 +314,7 @@ export function Landing() {
       <section className="overflow-hidden py-24">
         <FadeIn>
           <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
-            {PRESETS.length}+ presets. One click each.
+            {PRESETS.length} presets. One click each.
           </h2>
         </FadeIn>
         <FadeIn>
@@ -583,29 +587,35 @@ function PresetMarquee({ reverse, row }: { reverse: boolean; row: number }) {
 // ---------------------------------------------------------------- data
 
 const FEATURES = [
+  { icon: FileCode2, title: 'Import the CSS you already have', desc: 'Paste existing @keyframes, transitions and :hover rules and get them back as an editable timeline. Anything that cannot be represented is listed, never dropped quietly.' },
+  { icon: Blocks, title: '14 ready-made components', desc: 'Buttons that hover and press, modals that enter, toasts, tooltips, spinners and skeletons — inserted with their motion already wired.' },
+  { icon: MousePointerClick, title: 'Hover, focus and press states', desc: 'Real :hover / :focus-visible / :active rules compiled to transition, with asymmetric timing — fast press, slower release.' },
   { icon: MousePointer2, title: 'Figma-grade canvas', desc: 'Infinite pan & zoom, marquee select, smart guides, snap-to-artboard, drag / resize / rotate handles.' },
   { icon: Timer, title: 'After Effects timeline', desc: 'Per-property tracks, keyframe diamonds, draggable playhead, loop, speed control and frame stepping.' },
   { icon: Wand2, title: 'Real curve editor', desc: 'Every easing from linear to spring. Drag bezier handles and watch the curve — and your animation — update live.' },
-  { icon: Code2, title: '11 export formats', desc: 'CSS, SCSS, Tailwind, React, Vue, Svelte, Angular, styled-components, Emotion, Web Component, HTML.' },
-  { icon: Sparkles, title: '60+ presets', desc: 'Bounce, Elastic, Glitch, Neon Flicker, Wipes, Iris, Draw Line, Orbit… applied at the playhead as real keyframes.' },
+  { icon: Code2, title: '12 export formats', desc: 'CSS, SCSS, Tailwind v4 and v3, React, Vue, Svelte, Angular, styled-components, Emotion, Web Component, HTML.' },
+  { icon: Sparkles, title: '58 motion presets', desc: 'Bounce, Elastic, Glitch, Neon Flicker, Wipes, Iris, Draw Line, Orbit… applied at the playhead as real keyframes.' },
+  { icon: Link2, title: 'Share without an account', desc: 'The whole scene is packed into the link itself. Nothing is uploaded, links never expire, and opening one leaves the recipient’s own work an undo away.' },
   { icon: Folder, title: 'Nested animatable groups', desc: 'Groups hold groups, to any depth, and each one animates in its own right. They export as nested markup so transforms cascade exactly as designed.' },
   { icon: PenTool, title: 'SVG path & motion paths', desc: 'Draw-on line animations via stroke-dashoffset, plus offset-path so any element can travel a curve.' },
   { icon: Scissors, title: 'Clip & mask reveals', desc: 'Eight clip-path shapes and gradient masks with animatable parameters — wipes, irises and curtains in pure CSS.' },
   { icon: Variable, title: 'CSS variables', desc: 'Define design tokens, bind colours to them, and exports emit a :root block with var() references.' },
   { icon: MonitorSmartphone, title: 'Device preview', desc: 'Run the generated CSS in a real sandboxed viewport at phone, tablet, laptop or custom size.' },
-  { icon: Command, title: 'Command palette', desc: '⌘K fuzzy-searches every layer, preset, property and command. Never hunt through a panel again.' },
+  { icon: Command, title: 'Command palette', desc: '⌘K fuzzy-searches every layer, preset, component, property and command. Never hunt through a panel again.' },
   { icon: Gauge, title: '60fps by construction', desc: 'Output leans on transform and opacity, adds will-change, and never animates layout when it can help it.' },
-  { icon: Shield, title: 'Accessible by default', desc: 'One-click prefers-reduced-motion guard and WCAG 2.3.1 flash warnings baked into the inspector.' },
+  { icon: Shield, title: 'Accessible by default', desc: 'prefers-reduced-motion guards both animation and transition, and WCAG 2.3.1 flash warnings sit in the inspector.' },
   { icon: Layers, title: 'Layers & history', desc: 'Full layer tree with lock/hide, unlimited undo/redo, and autosave to your browser — nothing leaves your machine.' },
 ]
 
 const COMPARISON: [string, boolean | string, boolean | string, boolean | string][] = [
+  ['Edit your existing CSS visually', true, false, false],
   ['Visual timeline editing', true, false, 'Some'],
+  ['Hover / focus / press states', true, 'By hand', 'Manual'],
   ['Zero runtime dependency', true, true, false],
   ['Spring & bounce physics in CSS', true, 'By hand', true],
   ['Production-ready output', true, 'Depends', true],
   ['Reduced-motion handling', true, 'Manual', 'Manual'],
-  ['Works without code', true, false, false],
+  ['Share a link, no account', true, false, false],
   ['Free, local, no account', true, true, 'Varies'],
 ]
 
@@ -621,6 +631,8 @@ const FAQ = [
   { q: 'Is the generated CSS production-ready?', a: 'Yes. It favors transform/opacity, includes per-segment timing functions, bakes physics-based easings into keyframes, and can wrap everything in a prefers-reduced-motion guard.' },
   { q: 'How do springs and bounces work in pure CSS?', a: 'CSS timing functions can’t express oscillation, so MotionCraft samples the physics curve and bakes it into intermediate keyframes — identical motion, zero JavaScript.' },
   { q: 'Can I use it for commercial projects?', a: 'Absolutely. Everything you create and export is yours, no attribution required.' },
+  { q: 'Can I bring in animation code I already wrote?', a: 'Yes — paste it into the import dialog. @keyframes become timeline tracks, transitions and :hover / :focus / :active rules become editable states, and transforms, filters and shadows are split back into individual properties. The import is lossy by nature, so anything it cannot represent — matrix transforms, gradients, multiple shadows — is listed with a reason rather than dropped silently.' },
+  { q: 'How does sharing work without an account?', a: 'The entire scene is compressed into the link’s fragment — the part of a URL browsers never send to a server. Nothing is uploaded, links do not expire, and opening one leaves the recipient’s own work a single undo away.' },
   { q: 'How can clip-path and masks animate in CSS?', a: 'Every shape is built from interpolatable numbers — inset percentages, circle radii, polygon points — so the browser can tween between them. Masks are gradients whose stops move, which produces wipes and irises with no JavaScript.' },
   { q: 'What about Lottie, GSAP or Figma import?', a: 'The architecture was designed with these in mind — exporters are pluggable modules. They’re on the roadmap.' },
 ]

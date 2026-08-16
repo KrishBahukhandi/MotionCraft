@@ -1,7 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: [
+    './index.html',
+    './src/**/*.{ts,tsx}',
+    // This module *generates* Tailwind class strings for the export feature.
+    // Scanning it makes the compiler mistake template literals such as
+    // `translate-x-[${fmt(n('x'))}px]` for real utilities and emit broken CSS.
+    '!./src/lib/tailwind.ts',
+  ],
   theme: {
     extend: {
       colors: {
