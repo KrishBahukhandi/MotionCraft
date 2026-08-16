@@ -26,6 +26,7 @@ import {
 import { PROP_MAP } from '@/lib/properties'
 import { presetTracks, type Preset } from '@/lib/presets'
 import { buildComponent, type ComponentPreset } from '@/lib/components'
+import type { ImportResult } from '@/lib/cssimport'
 import { clamp, uid } from '@/lib/utils'
 
 const STORAGE_KEY = 'motioncraft-doc-v1'
@@ -95,6 +96,7 @@ export interface StudioState {
   expanded: Record<string, boolean>
   device: DeviceState
   paletteOpen: boolean
+  importOpen: boolean
   /** state being previewed/edited on the canvas, if any */
   editingState: { nodeId: string; stateId: string } | null
 
@@ -123,6 +125,7 @@ export interface StudioState {
   toggleExpanded: (id: string) => void
   setDevice: (d: Partial<DeviceState>) => void
   setPaletteOpen: (open: boolean) => void
+  setImportOpen: (open: boolean) => void
 
   select: (ids: string[], additive?: boolean) => void
   selectKf: (ref: KfRef | null) => void
@@ -172,6 +175,7 @@ export interface StudioState {
 
   applyPreset: (preset: Preset) => void
   insertComponent: (preset: ComponentPreset) => void
+  applyImport: (result: ImportResult) => void
   setDocName: (name: string) => void
   setDocSize: (w: number, h: number) => void
   setDocBackground: (bg: string) => void
@@ -213,6 +217,7 @@ export const useStudio = create<StudioState>()(
     expanded: {},
     device: { on: false, id: 'phone', width: 390, height: 844, landscape: false },
     paletteOpen: false,
+    importOpen: false,
     editingState: null,
 
     past: [],
@@ -338,6 +343,11 @@ export const useStudio = create<StudioState>()(
     setPaletteOpen: (open) =>
       set((s) => {
         s.paletteOpen = open
+      }),
+
+    setImportOpen: (open) =>
+      set((s) => {
+        s.importOpen = open
       }),
 
     select: (ids, additive = false) =>
@@ -872,6 +882,21 @@ export const useStudio = create<StudioState>()(
         s.selection = built.group ? [built.group.id] : built.elements.map((e) => e.id)
         for (const el of built.elements) s.expanded[el.id] = true
         if (built.group) s.expanded[built.group.id] = true
+        s.editingState = null
+        s.time = 0
+      })
+    },
+
+    applyImport: (result) => {
+      if (result.elements.length === 0) return
+      get().pushHistory()
+      set((s) => {
+        s.doc.elements.push(...result.elements)
+        if (result.duration > s.doc.duration) {
+          s.doc.duration = Math.min(60000, Math.round(result.duration))
+        }
+        s.selection = result.elements.map((e) => e.id)
+        for (const el of result.elements) s.expanded[el.id] = true
         s.editingState = null
         s.time = 0
       })

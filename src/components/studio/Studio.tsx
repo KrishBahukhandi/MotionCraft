@@ -21,6 +21,7 @@ import {
   Sun,
   Type,
   Undo2,
+  Upload,
 } from 'lucide-react'
 import { useStudio } from '@/store/studio'
 import { usePlayback } from '@/hooks/usePlayback'
@@ -36,6 +37,7 @@ import { LayersPanel } from './LayersPanel'
 import { ComponentsPanel } from './ComponentsPanel'
 import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
+import { ImportDialog } from './ImportDialog'
 import { IconButton, Tabs, ToastHost } from '@/components/ui/primitives'
 import { Logo } from '@/components/ui/Logo'
 import { Seo } from '@/components/Seo'
@@ -131,6 +133,9 @@ export function Studio() {
           <IconButton title={`Theme: ${theme}`} onClick={cycle}>
             {isDark ? <Moon size={15} /> : <Sun size={15} />}
           </IconButton>
+          <IconButton title="Import CSS" onClick={() => s.getState().setImportOpen(true)}>
+            <Upload size={15} />
+          </IconButton>
           <button
             onClick={() => s.getState().setRightTab('code')}
             className="ml-1 inline-flex h-8 items-center gap-1.5 rounded-xl bg-accent px-3.5 text-[13px] font-semibold text-white shadow-[0_2px_12px_rgb(var(--mc-accent)/0.4)] transition-all hover:brightness-110 active:scale-95"
@@ -206,6 +211,7 @@ export function Studio() {
 
       <ToastHost />
       <CommandPalette />
+      <ImportDialog />
     </div>
     </div>
   )

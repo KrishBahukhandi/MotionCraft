@@ -103,6 +103,7 @@ export function CommandPalette() {
       ],
       ['Toggle device preview', '', Box, () => s.setDevice({ on: !s.device.on })],
       ['Toggle loop', '', Play, () => s.setLoop(!s.loop)],
+      ['Import CSS', '', Code2, () => s.setImportOpen(true)],
       ['Show code panel', '', Code2, () => s.setRightTab('code')],
       ['Show motion presets', '', Sparkles, () => s.setLeftTab('presets')],
       ['Show components', '', Blocks, () => s.setLeftTab('components')],
