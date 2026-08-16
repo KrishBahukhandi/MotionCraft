@@ -26,18 +26,68 @@ function jsonLd(page) {
   })
 }
 
+function escapeAttr(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Rewrite one tag's value, throwing if the tag wasn't found.
+ *
+ * These replacements used to fail silently, which shipped every SEO page with
+ * the homepage's canonical URL — telling Google the whole set was duplicate
+ * content. A hard failure here turns "markup changed" into a broken build
+ * instead of a quietly de-indexed site.
+ */
+function replaceOne(html, pattern, build, label) {
+  let hits = 0
+  const out = html.replace(pattern, (...args) => {
+    hits++
+    return build(...args)
+  })
+  if (hits !== 1) {
+    throw new Error(
+      `prerender: expected exactly 1 match for ${label} in index.html, found ${hits}. ` +
+        `The head markup changed — update scripts/prerender.mjs to match.`
+    )
+  }
+  return out
+}
+
 function withPageMetadata(html, page) {
   const url = `https://motioncraft.bahukhandi-labs.com/${page.slug}`
-  return html
-    .replace(/<title>[\s\S]*?<\/title>/, `<title>${page.title}</title>`)
-    .replace(/(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
-    .replace(/(<link\s+rel="canonical"\s+href=")[^"]*("\s*\/?>>)/, `$1${url}$2`)
-    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.title}$2`)
-    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
-    .replace(/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>>)/, `$1${url}$2`)
-    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.title}$2`)
-    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>>)/, `$1${page.description}$2`)
-    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${jsonLd(page)}</script>`)
+  let out = html
+
+  out = replaceOne(
+    out,
+    /<title>[\s\S]*?<\/title>/,
+    () => `<title>${escapeAttr(page.title)}</title>`,
+    '<title>'
+  )
+
+  // note the closing group is `>` — an earlier `>>` here matched nothing
+  const attrs = [
+    [/(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>)/, page.description, 'meta description'],
+    [/(<link\s+rel="canonical"\s+href=")[^"]*("\s*\/?>)/, url, 'canonical'],
+    [/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>)/, page.title, 'og:title'],
+    [/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>)/, page.description, 'og:description'],
+    [/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>)/, url, 'og:url'],
+    [/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>)/, page.title, 'twitter:title'],
+    [/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>)/, page.description, 'twitter:description'],
+  ]
+  for (const [pattern, value, label] of attrs) {
+    out = replaceOne(out, pattern, (_m, open, close) => `${open}${escapeAttr(value)}${close}`, label)
+  }
+
+  return replaceOne(
+    out,
+    /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
+    () => `<script type="application/ld+json">${jsonLd(page)}</script>`,
+    'JSON-LD block'
+  )
 }
 
 const homepageHtml = render('/')
