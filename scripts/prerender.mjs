@@ -102,6 +102,43 @@ for (const page of SEO_PAGES) {
   writeFileSync(path.join(routeDir, 'index.html'), out)
 }
 
+/*
+ * Vercel serves 404.html for anything that matches no file and no rewrite, with
+ * a real 404 status. Without it the SPA catch-all handed unknown URLs the
+ * homepage at 200 — a soft 404, which search engines treat as thin duplicate
+ * content. A 404 must not claim a canonical either, so that tag is removed
+ * rather than left pointing somewhere real.
+ */
+{
+  const notFoundBody = render('/__not-found__')
+  let out = template.replace(marker, `<div id="root">${notFoundBody}</div>`)
+  out = replaceOne(
+    out,
+    /<title>[\s\S]*?<\/title>/,
+    () => '<title>Page Not Found | MotionCraft</title>',
+    '<title> (404)'
+  )
+  out = replaceOne(
+    out,
+    /(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>)/,
+    (_m, open, close) => `${open}This MotionCraft page does not exist.${close}`,
+    'meta description (404)'
+  )
+  out = replaceOne(
+    out,
+    /(<meta\s+name="robots"\s+content=")[^"]*("\s*\/?>)/,
+    (_m, open, close) => `${open}noindex, follow${close}`,
+    'meta robots (404)'
+  )
+  out = replaceOne(
+    out,
+    /\n?\s*<link\s+rel="canonical"[^>]*>/,
+    () => '',
+    'canonical (404)'
+  )
+  writeFileSync(path.join(root, 'dist', '404.html'), out)
+}
+
 const date = new Date().toISOString().slice(0, 10)
 const urls = [
   { loc: 'https://motioncraft.bahukhandi-labs.com/', priority: '1.0' },
