@@ -1,11 +1,13 @@
 import type { Doc } from './types'
 import {
+  type NodeCss,
   generateDocCss,
   docStylesheet,
   docMarkup,
   layoutStylesheet,
   type CssGenOptions,
 } from './cssgen'
+import { tailwindMotion, tailwindUsage, tailwindFallbackCss } from './tailwind'
 import { fmt } from './utils'
 
 export interface ExportFormat {
@@ -29,6 +31,24 @@ function pascal(name: string): string {
 /** Nested markup (groups wrap their members) matching the canvas structure. */
 function elementsMarkup(doc: Doc, indent = '  '): string {
   return docMarkup(doc, indent)
+}
+
+/**
+ * Nested pseudo-class blocks for CSS-in-JS templates. Both styled-components
+ * and Emotion support `&:hover { ... }`, so states carry over without needing a
+ * separate stylesheet.
+ */
+function nestedStateBlocks(part: NodeCss, pad = '  '): string {
+  return part.states
+    .map((s) => {
+      const decls = { ...s.decls }
+      if (s.transition) decls['transition'] = s.transition
+      const body = Object.entries(decls)
+        .map(([k, v]) => `${pad}${pad}${k}: ${v};`)
+        .join('\n')
+      return `\n${pad}&${s.selector} {\n${body}\n${pad}}`
+    })
+    .join('')
 }
 
 /** Full stylesheet including the positioning rules exported markup needs. */
@@ -89,8 +109,23 @@ const tailwind: ExportFormat = {
     const animEntries = withAnim
       .map((p) => `      '${p.className}': '${p.animation}'`)
       .join(',\n')
-    return `/** Add to your tailwind.config.js — then use class "animate-${withAnim[0]?.className ?? 'name'}" */
-export default {
+
+    const entries = parts.map((p) => ({
+      className: p.className,
+      motion: tailwindMotion(p.node, p.keyframesBlock ? p.className : null),
+    }))
+    // states are utilities rather than config, so they ship as a usage snippet
+    const usage = tailwindUsage(entries, ' *   ')
+    const header = usage
+      ? `/**
+ * Add the theme below to tailwind.config.js.
+ * Interaction states are utilities — paste these onto your elements:
+ *
+${usage}
+ */`
+      : `/** Add to your tailwind.config.js — then use class "animate-${withAnim[0]?.className ?? 'name'}" */`
+
+    const config = `export default {
   theme: {
     extend: {
       keyframes: {
@@ -102,6 +137,20 @@ ${animEntries}
     },
   },
 }`
+
+    // embedded in a JS comment, so the CSS must not contain a comment of its own
+    const fallback = tailwindFallbackCss(entries)
+    const notes = fallback
+      ? `\n\n/**\n * Some state properties have no Tailwind utility. Add to your CSS:\n *\n${fallback
+          .split('\n')
+          .map((l) => ` * ${l}`)
+          .join('\n')}\n */`
+      : ''
+
+    if (withAnim.length === 0) {
+      return `${header}\n\n/* No timeline animation yet — the classes above are all you need. */${notes}`
+    }
+    return `${header}\n${config}${notes}`
   },
 }
 
@@ -117,37 +166,46 @@ const tailwind4: ExportFormat = {
   language: 'css',
   file: 'animations.css',
   generate: (doc, opts) => {
-    const parts = generateDocCss(doc, opts).filter((p) => p.keyframesBlock)
-    if (parts.length === 0) {
-      return '/* No animated layers yet — add a keyframe in the timeline. */'
+    const all = generateDocCss(doc, opts)
+    const animated = all.filter((p) => p.keyframesBlock)
+    const entries = all.map((p) => ({
+      className: p.className,
+      motion: tailwindMotion(p.node, p.keyframesBlock ? p.className : null),
+    }))
+    const hasMotion = entries.some((e) => e.motion.classes.length > 0)
+    if (!hasMotion) {
+      return '/* No motion yet — add a keyframe in the timeline or an interaction state. */'
     }
+
     const indent = (text: string, pad: string) =>
       text
         .split('\n')
         .map((line) => (line ? `${pad}${line}` : line))
         .join('\n')
 
-    const entries = parts
-      .map((p) => {
-        const shorthand = p.animation!.replace(`${p.animationName} `, '')
-        return `  --animate-${p.className}: ${p.animationName} ${shorthand};`
-      })
-      .join('\n')
+    const themeBlock =
+      animated.length > 0
+        ? `@theme {
+${animated
+  .map((p) => `  --animate-${p.className}: ${p.animationName} ${p.animation!.replace(`${p.animationName} `, '')};`)
+  .join('\n')}
 
-    const frames = parts.map((p) => indent(p.keyframesBlock!, '  ')).join('\n\n')
-
-    const usage = parts.map((p) => `<div class="animate-${p.className}"></div>`).join('\n     ')
-
-    return `/* Tailwind v4 — import this from your main CSS, after @import "tailwindcss";
-   Usage:
-     ${usage}
-*/
-
-@theme {
-${entries}
-
-${frames}
+${animated.map((p) => indent(p.keyframesBlock!, '  ')).join('\n\n')}
 }`
+        : null
+
+    const fallback = tailwindFallbackCss(entries)
+
+    return [
+      `/* Tailwind v4 — import this from your main CSS, after @import "tailwindcss";
+   Interaction states are utilities, so paste these onto your elements:
+${tailwindUsage(entries)}
+*/`,
+      themeBlock,
+      fallback && `/* No Tailwind utility covers these, so they stay as CSS. */\n${fallback}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n')
   },
 }
 
@@ -169,7 +227,9 @@ const styled: ExportFormat = {
       const anim = p.animation
         ? `\n  animation: \${${name}Frames} ${p.animation.replace(`${p.animationName} `, '')};`
         : ''
-      return `${kf}export const ${name} = styled.div\`\n${decls}${anim}\n\``
+      const trans = p.transition ? `\n  transition: ${p.transition};` : ''
+      const states = nestedStateBlocks(p)
+      return `${kf}export const ${name} = styled.div\`\n${decls}${trans}${anim}${states}\n\``
     })
     return `import styled, { keyframes } from 'styled-components'\n\n${blocks.join('\n\n')}`
   },
@@ -193,7 +253,9 @@ const emotion: ExportFormat = {
       const anim = p.animation
         ? `\n  animation: \${${name}Frames} ${p.animation.replace(`${p.animationName} `, '')};`
         : ''
-      return `${kf}export const ${name.toLowerCase()}Style = css\`\n${decls}${anim}\n\``
+      const trans = p.transition ? `\n  transition: ${p.transition};` : ''
+      const states = nestedStateBlocks(p)
+      return `${kf}export const ${name.toLowerCase()}Style = css\`\n${decls}${trans}${anim}${states}\n\``
     })
     return `import { css, keyframes } from '@emotion/react'\n\n${blocks.join('\n\n')}`
   },
