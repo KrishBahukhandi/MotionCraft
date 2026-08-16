@@ -57,7 +57,7 @@ const scss: ExportFormat = {
 
 const tailwind: ExportFormat = {
   id: 'tailwind',
-  label: 'Tailwind',
+  label: 'Tailwind v3 (config)',
   language: 'js',
   file: 'tailwind.config.js',
   generate: (doc, opts) => {
@@ -101,6 +101,52 @@ ${animEntries}
       },
     },
   },
+}`
+  },
+}
+
+/**
+ * Tailwind v4 moved theme configuration out of JS and into CSS: custom
+ * animations are `--animate-*` variables inside `@theme`, with the keyframes
+ * nested alongside them. Emitting v3's JS config for a v4 project silently does
+ * nothing, so both are offered.
+ */
+const tailwind4: ExportFormat = {
+  id: 'tailwind4',
+  label: 'Tailwind v4 (CSS)',
+  language: 'css',
+  file: 'animations.css',
+  generate: (doc, opts) => {
+    const parts = generateDocCss(doc, opts).filter((p) => p.keyframesBlock)
+    if (parts.length === 0) {
+      return '/* No animated layers yet — add a keyframe in the timeline. */'
+    }
+    const indent = (text: string, pad: string) =>
+      text
+        .split('\n')
+        .map((line) => (line ? `${pad}${line}` : line))
+        .join('\n')
+
+    const entries = parts
+      .map((p) => {
+        const shorthand = p.animation!.replace(`${p.animationName} `, '')
+        return `  --animate-${p.className}: ${p.animationName} ${shorthand};`
+      })
+      .join('\n')
+
+    const frames = parts.map((p) => indent(p.keyframesBlock!, '  ')).join('\n\n')
+
+    const usage = parts.map((p) => `<div class="animate-${p.className}"></div>`).join('\n     ')
+
+    return `/* Tailwind v4 — import this from your main CSS, after @import "tailwindcss";
+   Usage:
+     ${usage}
+*/
+
+@theme {
+${entries}
+
+${frames}
 }`
   },
 }
@@ -312,6 +358,7 @@ ${elementsMarkup(doc, '    ')}
 export const EXPORT_FORMATS: ExportFormat[] = [
   css,
   scss,
+  tailwind4,
   tailwind,
   react,
   vue,
