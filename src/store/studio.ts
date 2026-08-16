@@ -97,6 +97,7 @@ export interface StudioState {
   device: DeviceState
   paletteOpen: boolean
   importOpen: boolean
+  shareOpen: boolean
   /** state being previewed/edited on the canvas, if any */
   editingState: { nodeId: string; stateId: string } | null
 
@@ -126,6 +127,7 @@ export interface StudioState {
   setDevice: (d: Partial<DeviceState>) => void
   setPaletteOpen: (open: boolean) => void
   setImportOpen: (open: boolean) => void
+  setShareOpen: (open: boolean) => void
 
   select: (ids: string[], additive?: boolean) => void
   selectKf: (ref: KfRef | null) => void
@@ -176,6 +178,7 @@ export interface StudioState {
   applyPreset: (preset: Preset) => void
   insertComponent: (preset: ComponentPreset) => void
   applyImport: (result: ImportResult) => void
+  loadSharedDoc: (doc: Doc) => void
   setDocName: (name: string) => void
   setDocSize: (w: number, h: number) => void
   setDocBackground: (bg: string) => void
@@ -218,6 +221,7 @@ export const useStudio = create<StudioState>()(
     device: { on: false, id: 'phone', width: 390, height: 844, landscape: false },
     paletteOpen: false,
     importOpen: false,
+    shareOpen: false,
     editingState: null,
 
     past: [],
@@ -348,6 +352,11 @@ export const useStudio = create<StudioState>()(
     setImportOpen: (open) =>
       set((s) => {
         s.importOpen = open
+      }),
+
+    setShareOpen: (open) =>
+      set((s) => {
+        s.shareOpen = open
       }),
 
     select: (ids, additive = false) =>
@@ -899,6 +908,22 @@ export const useStudio = create<StudioState>()(
         for (const el of result.elements) s.expanded[el.id] = true
         s.editingState = null
         s.time = 0
+      })
+    },
+
+    /**
+     * Open a scene received via a share link. History is pushed first so the
+     * recipient's own work is one undo away rather than lost.
+     */
+    loadSharedDoc: (incoming) => {
+      get().pushHistory()
+      set((s) => {
+        s.doc = incoming
+        s.selection = []
+        s.selectedKf = null
+        s.editingState = null
+        s.time = 0
+        s.playing = false
       })
     },
 

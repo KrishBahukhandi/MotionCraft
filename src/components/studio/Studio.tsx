@@ -22,6 +22,7 @@ import {
   Type,
   Undo2,
   Upload,
+  Link2,
 } from 'lucide-react'
 import { useStudio } from '@/store/studio'
 import { usePlayback } from '@/hooks/usePlayback'
@@ -38,9 +39,12 @@ import { ComponentsPanel } from './ComponentsPanel'
 import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
 import { ImportDialog } from './ImportDialog'
+import { ShareDialog } from './ShareDialog'
 import { IconButton, Tabs, ToastHost } from '@/components/ui/primitives'
 import { Logo } from '@/components/ui/Logo'
 import { Seo } from '@/components/Seo'
+import { clearShareHash, decodeDoc, readSharePayload } from '@/lib/share'
+import { toast } from '@/components/ui/primitives'
 
 const STUDIO_TITLE = 'Studio — Visual CSS Animation Editor | MotionCraft'
 const STUDIO_DESCRIPTION =
@@ -69,6 +73,39 @@ export function Studio() {
   const leftTab = useStudio((st) => st.leftTab)
   const rightTab = useStudio((st) => st.rightTab)
   const deviceOn = useStudio((st) => st.device.on)
+
+  /*
+   * A share link carries the whole scene in its fragment. This runs on load and
+   * again on hashchange: pasting a link while the studio is already open only
+   * changes the fragment, which does not remount anything.
+   */
+  useEffect(() => {
+    let cancelled = false
+
+    const adopt = () => {
+      const payload = readSharePayload()
+      if (!payload) return
+      decodeDoc(payload).then((shared) => {
+        if (cancelled) return
+        if (!shared) {
+          toast('That share link could not be read')
+          clearShareHash()
+          return
+        }
+        useStudio.getState().loadSharedDoc(shared)
+        // the scene is autosaved by now, so drop the payload from the address bar
+        clearShareHash()
+        toast('Opened shared scene — ⌘Z returns to your work')
+      })
+    }
+
+    adopt()
+    window.addEventListener('hashchange', adopt)
+    return () => {
+      cancelled = true
+      window.removeEventListener('hashchange', adopt)
+    }
+  }, [])
 
   useEffect(() => {
     // An untouched scene would otherwise index as "Untitled Motion — MotionCraft",
@@ -132,6 +169,9 @@ export function Studio() {
           </IconButton>
           <IconButton title={`Theme: ${theme}`} onClick={cycle}>
             {isDark ? <Moon size={15} /> : <Sun size={15} />}
+          </IconButton>
+          <IconButton title="Share link" onClick={() => s.getState().setShareOpen(true)}>
+            <Link2 size={15} />
           </IconButton>
           <IconButton title="Import CSS" onClick={() => s.getState().setImportOpen(true)}>
             <Upload size={15} />
@@ -212,6 +252,7 @@ export function Studio() {
       <ToastHost />
       <CommandPalette />
       <ImportDialog />
+      <ShareDialog />
     </div>
     </div>
   )
