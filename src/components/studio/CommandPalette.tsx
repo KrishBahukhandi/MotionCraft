@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Blocks,
   Box,
   Code2,
   CornerDownLeft,
@@ -14,6 +15,7 @@ import {
 import { useStudio } from '@/store/studio'
 import { isGroup } from '@/lib/types'
 import { PRESETS } from '@/lib/presets'
+import { COMPONENT_PRESETS } from '@/lib/components'
 import { PROP_DEFS } from '@/lib/properties'
 import { EXPORT_FORMATS } from '@/lib/exporters'
 import { ELEMENT_SPECS } from '@/lib/elements'
@@ -102,7 +104,8 @@ export function CommandPalette() {
       ['Toggle device preview', '', Box, () => s.setDevice({ on: !s.device.on })],
       ['Toggle loop', '', Play, () => s.setLoop(!s.loop)],
       ['Show code panel', '', Code2, () => s.setRightTab('code')],
-      ['Show presets', '', Sparkles, () => s.setLeftTab('presets')],
+      ['Show motion presets', '', Sparkles, () => s.setLeftTab('presets')],
+      ['Show components', '', Blocks, () => s.setLeftTab('components')],
       ['Add CSS variable', '', Wand2, () => s.addVariable()],
       ['Zoom to 100%', '⌘0', Box, () => s.setCanvasView({ zoom: 1, x: 0, y: 0 })],
       ['New scene', '', Box, () => s.resetDoc()],
@@ -119,6 +122,22 @@ export function CommandPalette() {
         section: 'Insert',
         icon: Box,
         run: () => s.addElement(spec.type),
+      })
+    }
+
+    // component presets insert finished UI, so they need no selection
+    for (const preset of COMPONENT_PRESETS) {
+      out.push({
+        id: `component-${preset.id}`,
+        label: preset.label,
+        hint: preset.category,
+        section: 'Components',
+        icon: Blocks,
+        run: () => {
+          s.insertComponent(preset)
+          if (preset.duration) s.restart()
+          toast(`Inserted “${preset.label}”`)
+        },
       })
     }
 

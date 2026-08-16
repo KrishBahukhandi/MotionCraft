@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Blocks,
   Sparkles,
   Square,
   Star,
@@ -32,6 +33,7 @@ import { Inspector } from './Inspector'
 import { CodePanel } from './CodePanel'
 import { PresetsPanel } from './PresetsPanel'
 import { LayersPanel } from './LayersPanel'
+import { ComponentsPanel } from './ComponentsPanel'
 import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
 import { IconButton, Tabs, ToastHost } from '@/components/ui/primitives'
@@ -155,14 +157,23 @@ export function Studio() {
           <div className="p-2 pb-0">
             <Tabs
               tabs={[
-                { id: 'layers' as const, label: <span className="inline-flex items-center gap-1"><Layers size={11} /> Layers</span> },
-                { id: 'presets' as const, label: <span className="inline-flex items-center gap-1"><Sparkles size={11} /> Presets</span> },
+                { id: 'layers' as const, label: <span className="inline-flex items-center gap-1"><Layers size={10} /> Layers</span> },
+                { id: 'presets' as const, label: <span className="inline-flex items-center gap-1"><Sparkles size={10} /> Motion</span> },
+                { id: 'components' as const, label: <span className="inline-flex items-center gap-1"><Blocks size={10} /> Parts</span> },
               ]}
               value={leftTab}
               onChange={(t) => s.getState().setLeftTab(t)}
             />
           </div>
-          <div className="min-h-0 flex-1">{leftTab === 'layers' ? <LayersPanel /> : <PresetsPanel />}</div>
+          <div className="min-h-0 flex-1">
+            {leftTab === 'layers' ? (
+              <LayersPanel />
+            ) : leftTab === 'presets' ? (
+              <PresetsPanel />
+            ) : (
+              <ComponentsPanel />
+            )}
+          </div>
         </aside>
 
         {/* canvas */}

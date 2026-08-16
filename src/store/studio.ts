@@ -25,6 +25,7 @@ import {
 } from '@/lib/engine'
 import { PROP_MAP } from '@/lib/properties'
 import { presetTracks, type Preset } from '@/lib/presets'
+import { buildComponent, type ComponentPreset } from '@/lib/components'
 import { clamp, uid } from '@/lib/utils'
 
 const STORAGE_KEY = 'motioncraft-doc-v1'
@@ -89,7 +90,7 @@ export interface StudioState {
   // viewports / panels
   canvas: { zoom: number; x: number; y: number }
   tlZoom: number
-  leftTab: 'layers' | 'presets'
+  leftTab: 'layers' | 'presets' | 'components'
   rightTab: 'inspect' | 'code'
   expanded: Record<string, boolean>
   device: DeviceState
@@ -117,7 +118,7 @@ export interface StudioState {
 
   setCanvasView: (v: Partial<{ zoom: number; x: number; y: number }>) => void
   setTlZoom: (z: number) => void
-  setLeftTab: (t: 'layers' | 'presets') => void
+  setLeftTab: (t: 'layers' | 'presets' | 'components') => void
   setRightTab: (t: 'inspect' | 'code') => void
   toggleExpanded: (id: string) => void
   setDevice: (d: Partial<DeviceState>) => void
@@ -170,6 +171,7 @@ export interface StudioState {
   removeTrack: (nodeId: string, prop: string) => void
 
   applyPreset: (preset: Preset) => void
+  insertComponent: (preset: ComponentPreset) => void
   setDocName: (name: string) => void
   setDocSize: (w: number, h: number) => void
   setDocBackground: (bg: string) => void
@@ -854,6 +856,24 @@ export const useStudio = create<StudioState>()(
           if (end > s.doc.duration) s.doc.duration = Math.min(60000, Math.round(end))
           s.expanded[node.id] = true
         }
+      })
+    },
+
+    insertComponent: (preset) => {
+      get().pushHistory()
+      set((s) => {
+        const built = buildComponent(preset, s.doc.width / 2, s.doc.height / 2)
+        if (built.group) s.doc.groups.push(built.group)
+        s.doc.elements.push(...built.elements)
+        // give the timeline room for entrance presets
+        if (built.duration > s.doc.duration) {
+          s.doc.duration = Math.min(60000, built.duration)
+        }
+        s.selection = built.group ? [built.group.id] : built.elements.map((e) => e.id)
+        for (const el of built.elements) s.expanded[el.id] = true
+        if (built.group) s.expanded[built.group.id] = true
+        s.editingState = null
+        s.time = 0
       })
     },
 
