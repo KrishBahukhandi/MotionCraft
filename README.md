@@ -26,9 +26,10 @@ Routes: `/` landing page · `/studio` the editor.
 
 ## Deploy
 
-The app is a static SPA — no environment variables, no server. `vercel.json` sets the
-Vite build, the SPA rewrite that keeps `/studio` working on refresh, and immutable
-cache headers for Vite's hashed assets.
+The app is a static SPA — no environment variables, no server. `vercel.json` sets the Vite
+build, immutable cache headers for Vite's hashed assets, and a rewrite scoped to `/studio`
+alone. Every other route is prerendered to disk, so the filesystem serves it and anything
+unmatched falls through to a real 404 rather than the homepage at 200.
 
 ```bash
 npx vercel --prod
@@ -68,8 +69,10 @@ frame stepping, ⌘-wheel zoom. Groups appear as parent rows with members nested
 and `:checked` compiled to `transition`, with optional per-state timing for asymmetric
 motion (fast press, slower release). Most component motion is a state change, not a loop.
 
-**14 component presets** — buttons that hover and press, modals that enter, dropdowns,
-tooltips, toasts, skeletons, spinners and text reveals, inserted with their motion wired.
+**17 component presets** — buttons that hover and press, tabs with a sliding indicator,
+accordions, navbars, modals, dropdowns, tooltips, toasts, skeletons, spinners and text
+reveals, inserted with their motion wired. Multi-part presets come grouped, and the navbar
+animates as a group so the whole bar moves as one.
 
 **58 motion presets** across entrances, exits, attention, reveals, path and effects.
 
@@ -140,7 +143,7 @@ The engine in `src/lib` is dependency-free and UI-agnostic:
 | `cssgen.ts` | `@keyframes` and state-rule generation, variable bindings, markup emission |
 | `cssparse.ts` · `cssdecompose.ts` · `cssimport.ts` | The inbound direction: read CSS back into editable nodes |
 | `exporters.ts` · `tailwind.ts` | The 12 output formats |
-| `presets.ts` · `components.ts` | 58 motion presets and 14 component presets, as data |
+| `presets.ts` · `components.ts` | 58 motion presets and 17 component presets, as data |
 | `share.ts` | Scene ⇄ URL fragment codec |
 
 Because everything animatable is a `NodeBase`, adding a node kind or an animatable property

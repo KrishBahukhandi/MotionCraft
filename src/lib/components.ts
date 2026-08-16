@@ -17,7 +17,13 @@ import { uid } from './utils'
  * element, styling and interaction states.
  */
 
-export type ComponentCategory = 'Buttons' | 'Cards' | 'Overlays' | 'Feedback' | 'Text'
+export type ComponentCategory =
+  | 'Buttons'
+  | 'Cards'
+  | 'Navigation'
+  | 'Overlays'
+  | 'Feedback'
+  | 'Text'
 
 interface Stop {
   /** normalized position within the preset's duration */
@@ -46,6 +52,12 @@ export interface ComponentPreset {
   duration?: number
   /** wrap the elements in a group with this name */
   group?: string
+  /**
+   * Animate the group itself. A navbar sliding in is one movement of the whole
+   * bar, not each child moving separately — and the group transform is what
+   * makes that a single line of exported CSS.
+   */
+  groupTracks?: Record<string, Stop[]>
   elements: ElementSpec[]
 }
 
@@ -478,6 +490,181 @@ export const COMPONENT_PRESETS: ComponentPreset[] = [
     ],
   },
 
+  // ------------------------------------------------------------- Navigation
+  {
+    id: 'tabs-indicator',
+    label: 'Tabs — Sliding Indicator',
+    category: 'Navigation',
+    description: 'The active pill slides between tabs instead of jumping.',
+    duration: 3000,
+    group: 'Tabs',
+    elements: [
+      {
+        type: 'rect',
+        name: 'Tab Track',
+        base: { x: 0, y: 0, width: 360, height: 44, backgroundColor: '#14161f', borderRadius: 12, opacity: 1 },
+      },
+      {
+        type: 'rect',
+        name: 'Active Indicator',
+        base: { x: 4, y: 4, width: 112, height: 36, backgroundColor: INDIGO, borderRadius: 9, opacity: 1 },
+        // offsets from rest: three slots 120px apart, holding at each
+        tracks: {
+          x: [
+            { p: 0, v: 0, e: 'ease-in-out' },
+            { p: 0.26, v: 0, e: 'ease-in-out' },
+            { p: 0.37, v: 120, e: 'ease-in-out' },
+            { p: 0.6, v: 120, e: 'ease-in-out' },
+            { p: 0.71, v: 240, e: 'ease-in-out' },
+            { p: 0.9, v: 240, e: 'ease-in-out' },
+            { p: 1, v: 0 },
+          ],
+        },
+      },
+      ...(['Design', 'Motion', 'Code'] as const).map((label, i) => ({
+        type: 'button' as const,
+        name: `Tab ${label}`,
+        transition: { duration: 160, easing: 'ease-out' },
+        base: {
+          x: 4 + i * 120,
+          y: 4,
+          width: 112,
+          height: 36,
+          backgroundColor: '#00000000',
+          color: i === 0 ? '#ffffff' : '#8b90a0',
+          fontSize: 13,
+          fontWeight: 600,
+          borderRadius: 9,
+          opacity: 1,
+          text: label,
+        },
+        states: [{ trigger: 'hover' as const, overrides: { color: '#e7e9ee' } }],
+      })),
+    ],
+  },
+  {
+    id: 'accordion-expand',
+    label: 'Accordion — Expand',
+    category: 'Navigation',
+    description: 'Panel opens by height while its copy fades up. Height is the one case transform cannot cover.',
+    duration: 600,
+    group: 'Accordion',
+    elements: [
+      {
+        type: 'button',
+        name: 'Accordion Header',
+        transition: { duration: 160, easing: 'ease-out' },
+        base: {
+          x: 0,
+          y: 0,
+          width: 320,
+          height: 48,
+          backgroundColor: PANEL,
+          color: INK,
+          fontSize: 14,
+          fontWeight: 600,
+          borderRadius: 12,
+          opacity: 1,
+          text: 'What’s included?',
+        },
+        states: [{ trigger: 'hover', overrides: { backgroundColor: '#262a3a' } }],
+      },
+      {
+        type: 'rect',
+        name: 'Accordion Panel',
+        base: { x: 0, y: 52, width: 320, height: 96, backgroundColor: '#14161f', borderRadius: 12, opacity: 1 },
+        tracks: {
+          height: [{ p: 0, v: 0, e: 'ease-out' }, { p: 1, v: 96 }],
+          opacity: [{ p: 0, v: 0, e: 'ease-out' }, { p: 0.5, v: 1 }, { p: 1, v: 1 }],
+        },
+      },
+      {
+        type: 'text',
+        name: 'Panel Copy',
+        base: {
+          x: 18,
+          y: 78,
+          width: 284,
+          height: 20,
+          backgroundColor: '#00000000',
+          color: '#8b90a0',
+          fontSize: 13,
+          opacity: 1,
+          text: 'Everything in Pro, plus priority support.',
+        },
+        tracks: {
+          opacity: [{ p: 0, v: 0, e: 'ease-out' }, { p: 0.45, v: 0, e: 'ease-out' }, { p: 1, v: 1 }],
+          y: [{ p: 0, v: 8, e: 'ease-out' }, { p: 0.45, v: 8, e: 'ease-out' }, { p: 1, v: 0 }],
+        },
+      },
+    ],
+  },
+  {
+    id: 'navbar-slide',
+    label: 'Navbar — Slide Down',
+    category: 'Navigation',
+    description: 'The whole bar drops in as one group; links and the CTA carry their own hover states.',
+    duration: 700,
+    group: 'Navbar',
+    groupTracks: {
+      y: [{ p: 0, v: -72, e: 'back-out' }, { p: 1, v: 0 }],
+      opacity: [{ p: 0, v: 0, e: 'ease-out' }, { p: 0.45, v: 1 }, { p: 1, v: 1 }],
+    },
+    elements: [
+      {
+        type: 'rect',
+        name: 'Nav Bar',
+        base: { x: 0, y: 0, width: 640, height: 60, backgroundColor: PANEL, borderRadius: 14, opacity: 1 },
+      },
+      {
+        type: 'rect',
+        name: 'Nav Logo',
+        base: { x: 20, y: 16, width: 28, height: 28, backgroundColor: INDIGO, borderRadius: 8, opacity: 1 },
+      },
+      ...(['Product', 'Docs', 'Pricing'] as const).map((label, i) => ({
+        type: 'button' as const,
+        name: `Nav ${label}`,
+        transition: { duration: 150, easing: 'ease-out' },
+        base: {
+          x: 70 + i * 84,
+          y: 16,
+          width: 78,
+          height: 28,
+          backgroundColor: '#00000000',
+          color: '#8b90a0',
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 8,
+          opacity: 1,
+          text: label,
+        },
+        states: [{ trigger: 'hover' as const, overrides: { color: INK, y: -1 } }],
+      })),
+      {
+        type: 'button',
+        name: 'Nav CTA',
+        transition: { duration: 160, easing: 'ease-out' },
+        base: {
+          x: 520,
+          y: 14,
+          width: 100,
+          height: 32,
+          backgroundColor: INDIGO,
+          color: '#ffffff',
+          fontSize: 13,
+          fontWeight: 600,
+          borderRadius: 9,
+          opacity: 1,
+          text: 'Sign up',
+        },
+        states: [
+          { trigger: 'hover', overrides: { backgroundColor: INDIGO_HI, scaleX: 1.04, scaleY: 1.04 } },
+          { trigger: 'active', overrides: { scaleX: 0.97, scaleY: 0.97 }, timing: { duration: 80 } },
+        ],
+      },
+    ],
+  },
+
   // ------------------------------------------------------------------- Text
   {
     id: 'hero-reveal',
@@ -541,6 +728,7 @@ export const COMPONENT_PRESETS: ComponentPreset[] = [
 export const COMPONENT_CATEGORIES: ComponentCategory[] = [
   'Buttons',
   'Cards',
+  'Navigation',
   'Overlays',
   'Feedback',
   'Text',
@@ -568,6 +756,8 @@ export function buildComponent(
   const originX = Math.round(cx - w / 2)
   const originY = Math.round(cy - h / 2)
 
+  const duration = preset.duration ?? 0
+
   const group: Group | null = preset.group
     ? {
         id: uid('grp'),
@@ -577,14 +767,22 @@ export function buildComponent(
         open: true,
         parentId: null,
         base: { x: 0, y: 0, opacity: 1, scaleX: 1, scaleY: 1, rotate: 0 },
-        tracks: [],
+        // a group's transform is relative to its contents, so these stops are
+        // used as-is rather than offset by the placement origin
+        tracks: Object.entries(preset.groupTracks ?? {}).map(([prop, stops]) => ({
+          prop,
+          keyframes: stops.map((s) => ({
+            id: uid('kf'),
+            time: Math.round(s.p * duration),
+            value: s.v,
+            easing: s.e ?? 'linear',
+          })),
+        })),
         bindings: {},
         states: [],
         transition: { ...DEFAULT_TRANSITION },
       }
     : null
-
-  const duration = preset.duration ?? 0
 
   const elements = preset.elements.map((spec) => {
     const base: BaseProps = {

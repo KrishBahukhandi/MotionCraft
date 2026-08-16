@@ -200,7 +200,7 @@ export function Landing() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 py-8 text-center md:grid-cols-4">
           {[
             ['58', 'motion presets'],
-            ['14', 'ready components'],
+            ['17', 'ready components'],
             ['12', 'export formats'],
             ['0', 'accounts required'],
           ].map(([big, small]) => (
@@ -588,7 +588,7 @@ function PresetMarquee({ reverse, row }: { reverse: boolean; row: number }) {
 
 const FEATURES = [
   { icon: FileCode2, title: 'Import the CSS you already have', desc: 'Paste existing @keyframes, transitions and :hover rules and get them back as an editable timeline. Anything that cannot be represented is listed, never dropped quietly.' },
-  { icon: Blocks, title: '14 ready-made components', desc: 'Buttons that hover and press, modals that enter, toasts, tooltips, spinners and skeletons — inserted with their motion already wired.' },
+  { icon: Blocks, title: '17 ready-made components', desc: 'Buttons that hover and press, tabs with a sliding indicator, accordions, navbars, modals, toasts, tooltips, spinners and skeletons — inserted with their motion already wired.' },
   { icon: MousePointerClick, title: 'Hover, focus and press states', desc: 'Real :hover / :focus-visible / :active rules compiled to transition, with asymmetric timing — fast press, slower release.' },
   { icon: MousePointer2, title: 'Figma-grade canvas', desc: 'Infinite pan & zoom, marquee select, smart guides, snap-to-artboard, drag / resize / rotate handles.' },
   { icon: Timer, title: 'After Effects timeline', desc: 'Per-property tracks, keyframe diamonds, draggable playhead, loop, speed control and frame stepping.' },
