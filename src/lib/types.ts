@@ -25,6 +25,36 @@ export interface Track {
 export type BaseProps = Record<string, number | string>
 
 /**
+ * Interaction triggers a state can respond to. These compile to CSS pseudo-class
+ * selectors and drive `transition`, not `@keyframes` — most component motion
+ * (button hover, focus rings, pressed states) is a state change, not a loop.
+ */
+export type TriggerKind =
+  | 'hover'
+  | 'focus'
+  | 'active'
+  | 'focus-within'
+  | 'disabled'
+  | 'checked'
+
+export interface TransitionTiming {
+  /** ms */
+  duration: number
+  easing: string
+  /** ms */
+  delay: number
+}
+
+export interface NodeState {
+  id: string
+  trigger: TriggerKind
+  /** only the properties that differ from base */
+  overrides: BaseProps
+  /** optional per-state timing; falls back to the node's default */
+  timing?: Partial<TransitionTiming>
+}
+
+/**
  * Anything animatable: elements and groups share this shape, so the sampling
  * engine, timeline and inspector all operate on one abstraction.
  */
@@ -37,6 +67,10 @@ export interface NodeBase {
   tracks: Track[]
   /** prop key -> variable id; applies to static (non-animated) values only */
   bindings: Record<string, string>
+  /** interaction states compiled to pseudo-class rules */
+  states: NodeState[]
+  /** default transition used by the base rule (the "return" timing) */
+  transition: TransitionTiming
 }
 
 export interface StudioElement extends NodeBase {

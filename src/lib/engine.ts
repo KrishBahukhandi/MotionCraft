@@ -41,6 +41,33 @@ export function sampleNode(node: StudioNode, t: number): BaseProps {
 /** @deprecated alias kept for readability at element call sites */
 export const sampleElement = sampleNode
 
+/**
+ * Sample with an interaction state applied on top. Used by the canvas to
+ * preview what `:hover` (or any trigger) looks like while you edit it.
+ */
+export function sampleNodeInState(
+  node: StudioNode,
+  t: number,
+  stateId: string | null
+): BaseProps {
+  const props = sampleNode(node, t)
+  if (!stateId) return props
+  const state = node.states.find((s) => s.id === stateId)
+  return state ? { ...props, ...state.overrides } : props
+}
+
+/** The value a property has in a given state, falling back to base. */
+export function stateValue(
+  node: StudioNode,
+  stateId: string,
+  prop: string,
+  t: number
+): number | string {
+  const state = node.states.find((s) => s.id === stateId)
+  if (state && prop in state.overrides) return state.overrides[prop]
+  return currentValue(node, prop, t)
+}
+
 /** The value a property currently has (sampled if animated, base/default otherwise). */
 export function currentValue(node: StudioNode, prop: string, t: number): number | string {
   const track = node.tracks.find((tr) => tr.prop === prop)

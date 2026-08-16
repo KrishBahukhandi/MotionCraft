@@ -1,7 +1,14 @@
-import type { Doc, Group, StudioElement, StudioNode } from './types'
+import type {
+  Doc,
+  Group,
+  NodeState,
+  StudioElement,
+  StudioNode,
+  TransitionTiming,
+} from './types'
 import { isGroup } from './types'
-import { easingCss, needsBaking } from './easing'
-import { cssDecls } from './properties'
+import { easingCss, needsBaking, transitionTimingFunction } from './easing'
+import { cssDecls, triggerSelector } from './properties'
 import {
   allNodes,
   childGroups,
@@ -25,6 +32,17 @@ export const DEFAULT_GEN_OPTIONS: CssGenOptions = {
   minify: false,
 }
 
+export interface StateCss {
+  state: NodeState
+  /** pseudo-class suffix, e.g. ":hover" */
+  selector: string
+  decls: Record<string, string>
+  /** per-state transition, emitted when its timing differs from the node default */
+  transition: string | null
+  /** easings that had to be approximated because transitions can't oscillate */
+  approximated: boolean
+}
+
 export interface NodeCss {
   node: StudioNode
   className: string
@@ -35,6 +53,9 @@ export interface NodeCss {
   animation: string | null
   /** formatted @keyframes block, or null */
   keyframesBlock: string | null
+  /** transition shorthand for the base rule (governs returning to rest) */
+  transition: string | null
+  states: StateCss[]
 }
 
 interface Stop {
@@ -103,6 +124,54 @@ function buildStops(node: StudioNode, duration: number): Stop[] | null {
 
 function pct(time: number, duration: number): string {
   return `${fmt((time / Math.max(duration, 1)) * 100, 2)}%`
+}
+
+function timingOf(node: StudioNode, state?: NodeState): TransitionTiming {
+  return { ...node.transition, ...(state?.timing ?? {}) }
+}
+
+function transitionValue(cssProps: string[], timing: TransitionTiming): string | null {
+  if (cssProps.length === 0) return null
+  const { css } = transitionTimingFunction(timing.easing)
+  const delay = timing.delay ? ` ${fmt(timing.delay)}ms` : ''
+  return cssProps.map((p) => `${p} ${fmt(timing.duration)}ms ${css}${delay}`).join(', ')
+}
+
+/**
+ * Compile a node's interaction states into pseudo-class rules.
+ *
+ * Overrides are merged onto the base before rendering so composite values stay
+ * whole: changing `scaleX` alone must still emit the complete `transform`, not a
+ * fragment. The transitioned property list is derived from the same declaration
+ * map, which is what maps `scaleX` -> `transform` correctly.
+ */
+function buildStates(node: StudioNode): { states: StateCss[]; changedCssProps: string[] } {
+  const changed = new Set<string>()
+  const states: StateCss[] = []
+
+  for (const state of node.states) {
+    const keys = Object.keys(state.overrides)
+    if (keys.length === 0) continue
+    const merged = { ...node.base, ...state.overrides }
+    const decls = cssDecls(merged, new Set(keys))
+    for (const cssProp of Object.keys(decls)) changed.add(cssProp)
+
+    const own = state.timing ?? {}
+    const hasOwnTiming =
+      own.duration !== undefined || own.easing !== undefined || own.delay !== undefined
+    const timing = timingOf(node, state)
+    const { approximated } = transitionTimingFunction(timing.easing)
+
+    states.push({
+      state,
+      selector: triggerSelector(state.trigger),
+      decls,
+      transition: hasOwnTiming ? transitionValue(Object.keys(decls), timing) : null,
+      approximated,
+    })
+  }
+
+  return { states, changedCssProps: [...changed] }
 }
 
 /** Resolve variable bindings: a bound prop emits var(--name) instead of a literal. */
@@ -178,7 +247,19 @@ export function generateNodeCss(
     animation = `${animationName} ${fmt(doc.duration)}ms linear 0ms ${count} both`
   }
 
-  return { node, className, animationName, baseDecls, animation, keyframesBlock }
+  const { states, changedCssProps } = buildStates(node)
+  const transition = transitionValue(changedCssProps, timingOf(node))
+
+  return {
+    node,
+    className,
+    animationName,
+    baseDecls,
+    animation,
+    keyframesBlock,
+    transition,
+    states,
+  }
 }
 
 /** Back-compat name used by the presets thumbnail generator. */
@@ -213,6 +294,7 @@ export function docStylesheet(doc: Doc, opts: CssGenOptions = DEFAULT_GEN_OPTION
 
   for (const p of parts) {
     const decls = { ...p.baseDecls }
+    if (p.transition) decls['transition'] = p.transition
     if (p.animation) {
       decls['animation'] = p.animation
       decls['will-change'] = 'transform, opacity'
@@ -221,16 +303,26 @@ export function docStylesheet(doc: Doc, opts: CssGenOptions = DEFAULT_GEN_OPTION
       .map(([k, v]) => `${ind}${k}:${sp}${v};`)
       .join(nl)
     blocks.push(`.${p.className}${sp}{${nl}${body}${nl}}`)
+
+    for (const s of p.states) {
+      const stateDecls = { ...s.decls }
+      if (s.transition) stateDecls['transition'] = s.transition
+      const stateBody = Object.entries(stateDecls)
+        .map(([k, v]) => `${ind}${k}:${sp}${v};`)
+        .join(nl)
+      blocks.push(`.${p.className}${s.selector}${sp}{${nl}${stateBody}${nl}}`)
+    }
+
     if (p.keyframesBlock) blocks.push(p.keyframesBlock)
   }
 
-  if (opts.reducedMotion && parts.some((p) => p.animation)) {
-    const sel = parts
-      .filter((p) => p.animation)
-      .map((p) => `${ind}.${p.className}`)
-      .join(`,${nl}`)
+  const moving = parts.filter((p) => p.animation || p.transition)
+  if (opts.reducedMotion && moving.length > 0) {
+    const sel = moving.map((p) => `${ind}.${p.className}`).join(`,${nl}`)
+    // transitions need silencing too, not just keyframe animations
+    const body = [`${ind}${ind}animation: none;`, `${ind}${ind}transition: none;`].join(nl)
     blocks.push(
-      `@media (prefers-reduced-motion: reduce)${sp}{${nl}${sel}${sp}{${nl}${ind}${ind}animation: none;${nl}${ind}}${nl}}`
+      `@media (prefers-reduced-motion: reduce)${sp}{${nl}${sel}${sp}{${nl}${body}${nl}${ind}}${nl}}`
     )
   }
 

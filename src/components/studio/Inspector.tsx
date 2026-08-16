@@ -1,6 +1,13 @@
 import { Diamond, Folder, Link2, Plus, Trash2, Unlink } from 'lucide-react'
 import { useStudio } from '@/store/studio'
-import { currentValue, getTrack, hasKeyframeAt, flashWarning, findNode } from '@/lib/engine'
+import {
+  currentValue,
+  getTrack,
+  hasKeyframeAt,
+  flashWarning,
+  findNode,
+  stateValue,
+} from '@/lib/engine'
 import { isGroup } from '@/lib/types'
 import {
   CLIP_SHAPES,
@@ -8,11 +15,13 @@ import {
   MOTION_PATHS,
   PATH_SHAPES,
   PROP_DEFS,
+  TRIGGER_MAP,
   type PropDef,
 } from '@/lib/properties'
 import type { StudioElement, StudioNode } from '@/lib/types'
 import { ColorField, NumberField, Section, Button, Select } from '@/components/ui/primitives'
 import { EasingEditor } from './EasingEditor'
+import { StatesSection } from './StatesSection'
 
 export function Inspector() {
   const doc = useStudio((s) => s.doc)
@@ -46,6 +55,7 @@ export function Inspector() {
             ⚠ Rapid opacity/brightness flashing — may violate WCAG 2.3.1 (3 flashes per second).
           </div>
         )}
+        <EditingStateBanner node={node} />
       </div>
 
       <PropGroup node={node} time={time} group="transform" title="Transform" />
@@ -120,6 +130,34 @@ export function Inspector() {
       />
       <MotionPathSection node={node} time={time} />
       <PropGroup node={node} time={time} group="effects" title="Effects" defaultOpen={false} />
+      <StatesSection node={node} />
+    </div>
+  )
+}
+
+/** Makes it unmistakable that edits are going into a state, not the base. */
+function EditingStateBanner({ node }: { node: StudioNode }) {
+  const s = useStudio
+  const editingState = useStudio((st) => st.editingState)
+  if (editingState?.nodeId !== node.id) return null
+  const state = node.states.find((st) => st.id === editingState.stateId)
+  if (!state) return null
+  const meta = TRIGGER_MAP.get(state.trigger)
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-lg bg-accent/15 px-2 py-1.5 text-[11px] text-accent">
+      <span className="relative flex h-2 w-2 shrink-0">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+      </span>
+      <span className="flex-1">
+        Editing <span className="font-mono">{meta?.selector}</span>
+      </span>
+      <button
+        className="rounded px-1.5 py-0.5 text-[10px] font-semibold hover:bg-accent/20"
+        onClick={() => s.getState().setEditingState(null)}
+      >
+        Done
+      </button>
     </div>
   )
 }
@@ -235,7 +273,14 @@ function PropGroup({
 function PropRow({ node, def, time }: { node: StudioNode; def: PropDef; time: number }) {
   const s = useStudio
   const variables = useStudio((st) => st.doc.variables)
-  const value = currentValue(node, def.key, time)
+  const editingState = useStudio((st) => st.editingState)
+  const editingId = editingState?.nodeId === node.id ? editingState.stateId : null
+  const overridden = editingId
+    ? !!node.states.find((st) => st.id === editingId)?.overrides[def.key]
+    : false
+
+  // while editing a state, the field shows and writes that state's value
+  const value = editingId ? stateValue(node, editingId, def.key, time) : currentValue(node, def.key, time)
   const track = getTrack(node, def.key)
   const animated = !!track && track.keyframes.length > 0
   const keyedHere = hasKeyframeAt(node, def.key, time)
@@ -243,7 +288,17 @@ function PropRow({ node, def, time }: { node: StudioNode; def: PropDef; time: nu
   const boundVar = variables.find((v) => v.id === boundVarId)
   const bindable = def.kind === 'color' && variables.length > 0
 
-  const diamond = (
+  // a state override is a static value, so keyframing is meaningless there
+  const diamond = editingId ? (
+    <span
+      title={overridden ? 'Overridden in this state' : 'Same as the base value'}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center ${
+        overridden ? 'text-accent' : 'text-mute/25'
+      }`}
+    >
+      <Diamond size={9} fill={overridden ? 'currentColor' : 'none'} />
+    </span>
+  ) : (
     <button
       title={
         keyedHere

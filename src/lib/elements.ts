@@ -2,7 +2,10 @@ import type { Doc, ElementType, Group, StudioElement } from './types'
 import { PATH_SHAPES } from './properties'
 import { uid } from './utils'
 
-export const DOC_VERSION = 2
+export const DOC_VERSION = 3
+
+/** Sensible default for UI state changes: quick, decelerating, no delay. */
+export const DEFAULT_TRANSITION = { duration: 200, easing: 'ease-out', delay: 0 }
 
 let nameCounters: Record<string, number> = {}
 
@@ -31,6 +34,8 @@ function makeEl(
     base,
     tracks: [],
     bindings: {},
+    states: [],
+    transition: { ...DEFAULT_TRANSITION },
   }
 }
 
@@ -45,6 +50,8 @@ export function makeGroup(name = 'Group', parentId: string | null = null): Group
     base: { x: 0, y: 0, opacity: 1, scaleX: 1, scaleY: 1, rotate: 0 },
     tracks: [],
     bindings: {},
+    states: [],
+    transition: { ...DEFAULT_TRANSITION },
   }
 }
 
@@ -201,6 +208,8 @@ export function migrateDoc(raw: unknown): Doc | null {
       ...el,
       groupId: el.groupId ?? null,
       bindings: el.bindings ?? {},
+      states: el.states ?? [],
+      transition: el.transition ?? { ...DEFAULT_TRANSITION },
       tracks: Array.isArray(el.tracks) ? el.tracks : [],
     })),
     groups: Array.isArray(d.groups)
@@ -209,6 +218,8 @@ export function migrateDoc(raw: unknown): Doc | null {
           open: g.open ?? true,
           parentId: g.parentId ?? null,
           bindings: g.bindings ?? {},
+          states: g.states ?? [],
+          transition: g.transition ?? { ...DEFAULT_TRANSITION },
           tracks: g.tracks ?? [],
         }))
       : [],

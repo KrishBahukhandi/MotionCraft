@@ -180,6 +180,32 @@ export function easingLabel(easing: string): string {
   return easing
 }
 
+/**
+ * Timing function for a `transition`.
+ *
+ * Keyframe output can bake oscillating easings (bounce/elastic/spring) into
+ * extra stops, but a transition has no stops to bake into — the browser only
+ * accepts a single timing function. Those easings are substituted with the
+ * closest single-curve approximation, and `approximated` lets the UI say so
+ * rather than silently changing the motion.
+ */
+export function transitionTimingFunction(easing: string): {
+  css: string
+  approximated: boolean
+} {
+  const direct = easingCss(easing)
+  if (direct) return { css: direct, approximated: false }
+  const fallbacks: Record<string, string> = {
+    'bounce-out': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    'bounce-in': 'cubic-bezier(0.36, 0, 0.66, -0.56)',
+    'elastic-out': 'cubic-bezier(0.22, 1.2, 0.36, 1)',
+    'elastic-in': 'cubic-bezier(0.64, -0.2, 0.78, 0)',
+    'elastic-in-out': 'cubic-bezier(0.65, -0.3, 0.35, 1.3)',
+    spring: 'cubic-bezier(0.22, 1.3, 0.36, 1)',
+  }
+  return { css: fallbacks[easing] ?? 'ease-out', approximated: true }
+}
+
 export function easingBezierPoints(easing: string): [number, number, number, number] | null {
   const def = byId.get(easing)
   if (def?.bezier) return def.bezier

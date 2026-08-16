@@ -9,6 +9,8 @@ import type {
   StudioElement,
   StudioNode,
   Track,
+  TransitionTiming,
+  TriggerKind,
   Variable,
 } from '@/lib/types'
 import { isGroup } from '@/lib/types'
@@ -92,6 +94,8 @@ export interface StudioState {
   expanded: Record<string, boolean>
   device: DeviceState
   paletteOpen: boolean
+  /** state being previewed/edited on the canvas, if any */
+  editingState: { nodeId: string; stateId: string } | null
 
   // history
   past: Doc[]
@@ -139,6 +143,16 @@ export interface StudioState {
   toggleGroupOpen: (id: string) => void
   moveToGroup: (elId: string, groupId: string | null) => void
   moveGroupToParent: (groupId: string, parentId: string | null) => void
+
+  // interaction states
+  addState: (nodeId: string, trigger: TriggerKind) => void
+  removeState: (nodeId: string, stateId: string) => void
+  setStateTrigger: (nodeId: string, stateId: string, trigger: TriggerKind) => void
+  setStateTiming: (nodeId: string, stateId: string, patch: Partial<TransitionTiming>) => void
+  clearStateOverride: (nodeId: string, stateId: string, prop: string) => void
+  setNodeTransition: (nodeId: string, patch: Partial<TransitionTiming>) => void
+  /** which state the canvas previews and property edits write into */
+  setEditingState: (ref: { nodeId: string; stateId: string } | null) => void
 
   // variables
   addVariable: (name?: string, value?: string) => void
@@ -197,6 +211,7 @@ export const useStudio = create<StudioState>()(
     expanded: {},
     device: { on: false, id: 'phone', width: 390, height: 844, landscape: false },
     paletteOpen: false,
+    editingState: null,
 
     past: [],
     future: [],
@@ -335,6 +350,8 @@ export const useStudio = create<StudioState>()(
           s.selection = ids
         }
         if (s.selectedKf && !s.selection.includes(s.selectedKf.elId)) s.selectedKf = null
+        // leaving the node drops out of state-editing mode
+        if (s.editingState && !s.selection.includes(s.editingState.nodeId)) s.editingState = null
       }),
 
     selectKf: (ref) =>
@@ -597,6 +614,73 @@ export const useStudio = create<StudioState>()(
       })
     },
 
+    // ---------------------------------------------------------------- states
+
+    addState: (nodeId, trigger) => {
+      get().pushHistory()
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        if (!node) return
+        const existing = node.states.find((st) => st.trigger === trigger)
+        if (existing) {
+          // don't create a duplicate selector — focus the existing one instead
+          s.editingState = { nodeId, stateId: existing.id }
+          return
+        }
+        const state = { id: uid('st'), trigger, overrides: {} as Record<string, number | string> }
+        node.states.push(state)
+        s.editingState = { nodeId, stateId: state.id }
+      })
+    },
+
+    removeState: (nodeId, stateId) => {
+      get().pushHistory()
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        if (!node) return
+        node.states = node.states.filter((st) => st.id !== stateId)
+        if (s.editingState?.stateId === stateId) s.editingState = null
+      })
+    },
+
+    setStateTrigger: (nodeId, stateId, trigger) => {
+      get().pushHistory()
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        const state = node?.states.find((st) => st.id === stateId)
+        if (state) state.trigger = trigger
+      })
+    },
+
+    setStateTiming: (nodeId, stateId, patch) =>
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        const state = node?.states.find((st) => st.id === stateId)
+        if (!state) return
+        state.timing = { ...(state.timing ?? {}), ...patch }
+      }),
+
+    clearStateOverride: (nodeId, stateId, prop) => {
+      get().pushHistory()
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        const state = node?.states.find((st) => st.id === stateId)
+        if (state) delete state.overrides[prop]
+      })
+    },
+
+    setNodeTransition: (nodeId, patch) =>
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        if (node) node.transition = { ...node.transition, ...patch }
+      }),
+
+    setEditingState: (ref) =>
+      set((s) => {
+        s.editingState = ref
+        if (ref && !s.selection.includes(ref.nodeId)) s.selection = [ref.nodeId]
+      }),
+
     // ------------------------------------------------------------- variables
 
     addVariable: (name, value) => {
@@ -652,6 +736,15 @@ export const useStudio = create<StudioState>()(
       set((s) => {
         const node = nodeIn(s.doc, nodeId)
         if (!node) return
+        // while a state is being edited, property changes describe that state
+        const editing =
+          s.editingState?.nodeId === nodeId
+            ? node.states.find((st) => st.id === s.editingState!.stateId)
+            : undefined
+        if (editing) {
+          editing.overrides[prop] = clampToDef(prop, value)
+          return
+        }
         writeProp(s, node, prop, value)
       })
     },
@@ -804,13 +897,18 @@ function findTrack(doc: Doc, ref: KfRef): Track | undefined {
   return nodeIn(doc, ref.elId)?.tracks.find((tr) => tr.prop === ref.prop)
 }
 
-/** Auto-keyframe write: upsert kf at playhead when a track exists, else write base. */
-function writeProp(s: Draft, node: StudioNode, prop: string, value: number | string) {
+function clampToDef(prop: string, value: number | string): number | string {
   const def = PROP_MAP.get(prop)
   if (def && typeof value === 'number') {
     if (def.min !== undefined) value = Math.max(def.min, value)
     if (def.max !== undefined) value = Math.min(def.max, value)
   }
+  return value
+}
+
+/** Auto-keyframe write: upsert kf at playhead when a track exists, else write base. */
+function writeProp(s: Draft, node: StudioNode, prop: string, value: number | string) {
+  value = clampToDef(prop, value)
   const track = node.tracks.find((tr) => tr.prop === prop)
   if (track && track.keyframes.length > 0) {
     const existing = track.keyframes.find((k) => Math.abs(k.time - s.time) <= 1)

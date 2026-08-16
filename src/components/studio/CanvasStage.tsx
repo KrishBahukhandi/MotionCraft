@@ -14,6 +14,7 @@ import {
   groupAncestors,
   groupBBox,
   sampleNode,
+  sampleNodeInState,
   ungroupedElements,
 } from '@/lib/engine'
 import { clipOf, filterOf, maskOf, transformOf } from '@/lib/properties'
@@ -89,6 +90,7 @@ export function CanvasStage() {
   const doc = useStudio((s) => s.doc)
   const time = useStudio((s) => s.time)
   const selection = useStudio((s) => s.selection)
+  const editingState = useStudio((s) => s.editingState)
   const view = useStudio((s) => s.canvas)
   const setView = useStudio((s) => s.setCanvasView)
   const select = useStudio((s) => s.select)
@@ -488,18 +490,25 @@ export function CanvasStage() {
     )
   }
 
+
+  /** Applies the state being edited so the canvas shows :hover etc. live. */
+  const propsFor = (n: StudioNode) =>
+    editingState?.nodeId === n.id
+      ? sampleNodeInState(n, time, editingState.stateId)
+      : sampleNode(n, time)
+
   /** Renders a group and everything beneath it, at any depth. */
   const renderGroup = (g: Group): ReactElement | null => {
     if (!g.visible) return null
     const bb = groupBBox(doc, g.id)
-    const gp = sampleNode(g, time)
+    const gp = propsFor(g)
     return (
       <div key={g.id} style={groupStyle(g, gp, `${bb.x + bb.w / 2}px ${bb.y + bb.h / 2}px`, true)}>
         {childGroups(doc, g.id).map((child) => renderGroup(child))}
         {elementsOfGroup(doc, g.id).map((el) =>
           el.visible ? (
             <div key={el.id} onPointerDown={(e) => onElementDown(e, el)}>
-              <ElementContent el={el} props={sampleNode(el, time)} />
+              <ElementContent el={el} props={propsFor(el)} />
             </div>
           ) : null
         )}
@@ -568,7 +577,7 @@ export function CanvasStage() {
             {ungroupedElements(doc).map((el) =>
               el.visible ? (
                 <div key={el.id} onPointerDown={(e) => onElementDown(e, el)}>
-                  <ElementContent el={el} props={sampleNode(el, time)} />
+                  <ElementContent el={el} props={propsFor(el)} />
                 </div>
               ) : null
             )}

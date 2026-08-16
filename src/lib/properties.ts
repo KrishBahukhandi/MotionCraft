@@ -1,4 +1,4 @@
-import type { BaseProps } from './types'
+import type { BaseProps, TriggerKind } from './types'
 import { fmt } from './utils'
 
 export type PropGroup =
@@ -90,6 +90,21 @@ export const CLIP_KEYS = ['clipTop', 'clipRight', 'clipBottom', 'clipLeft', 'cli
 export const MASK_KEYS = ['maskProgress', 'maskFeather']
 export const STROKE_KEYS = ['strokeWidth', 'strokeColor', 'strokeDash', 'strokeOffset']
 export const OFFSET_KEYS = ['offsetDistance', 'offsetRotate']
+
+export const TRIGGERS: { value: TriggerKind; label: string; selector: string; hint: string }[] = [
+  { value: 'hover', label: 'Hover', selector: ':hover', hint: 'Pointer over the element' },
+  { value: 'focus', label: 'Focus', selector: ':focus-visible', hint: 'Keyboard focus (not mouse clicks)' },
+  { value: 'active', label: 'Pressed', selector: ':active', hint: 'While being clicked or tapped' },
+  { value: 'focus-within', label: 'Focus within', selector: ':focus-within', hint: 'Focus inside the element' },
+  { value: 'disabled', label: 'Disabled', selector: ':disabled', hint: 'Disabled form controls' },
+  { value: 'checked', label: 'Checked', selector: ':checked', hint: 'Checked inputs' },
+]
+
+export const TRIGGER_MAP = new Map(TRIGGERS.map((t) => [t.value, t]))
+
+export function triggerSelector(trigger: TriggerKind): string {
+  return TRIGGER_MAP.get(trigger)?.selector ?? ':hover'
+}
 
 /** Non-animated base settings that select a shape/mode. */
 export const CLIP_SHAPES = [

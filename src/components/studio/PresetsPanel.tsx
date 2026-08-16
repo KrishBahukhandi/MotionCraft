@@ -3,6 +3,7 @@ import { Search, Sparkles } from 'lucide-react'
 import { useStudio } from '@/store/studio'
 import { PRESETS, PRESET_CATEGORIES, presetTracks, type Preset } from '@/lib/presets'
 import { generateElementCss } from '@/lib/cssgen'
+import { DEFAULT_TRANSITION } from '@/lib/elements'
 import type { Doc, StudioElement } from '@/lib/types'
 import { toast } from '@/components/ui/primitives'
 
@@ -23,6 +24,8 @@ function buildPreviewStyles(): string {
     locked: false,
     groupId: null,
     bindings: {},
+    states: [],
+    transition: { ...DEFAULT_TRANSITION },
     base: { x: 0, y: 0, width: 22, height: 22, backgroundColor: '#8b7bff', borderRadius: 6, opacity: 1 },
     tracks: [],
   }
