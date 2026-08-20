@@ -30,6 +30,8 @@ import { Logo } from '@/components/ui/Logo'
 import { useTheme } from '@/hooks/useTheme'
 import { CodeBlock } from '@/lib/highlight'
 import { PRESETS } from '@/lib/presets'
+import { GALLERY, findGalleryEntry } from '@/lib/gallery'
+import { GalleryPreview } from '@/components/gallery/GalleryPreview'
 import { Kbd } from '@/components/ui/primitives'
 import { Seo } from '@/components/Seo'
 
@@ -101,6 +103,18 @@ function FadeIn({
     </motion.div>
   )
 }
+
+/** A spread across categories, so the homepage shows range rather than variations. */
+const HOME_PICKS = [
+  'css-loading-spinner',
+  'button-hover-effect',
+  'card-hover-lift',
+  'modal-fade-in-animation',
+  'toast-notification-slide-in',
+  'text-reveal-animation',
+]
+  .map((slug) => findGalleryEntry(slug))
+  .filter((e): e is NonNullable<typeof e> => !!e)
 
 export const LANDING_TITLE = 'MotionCraft — Free Visual CSS Animation Generator & Studio'
 export const LANDING_DESCRIPTION =
@@ -212,23 +226,73 @@ export function Landing() {
         </div>
       </section>
 
-      {/* Search-focused guides give visitors direct routes to common animation tasks. */}
+      {/*
+        Working animations rather than links to more marketing. Someone who
+        arrives ready to use the tool should meet the output, not another pitch;
+        the keyword guides stay, but as a secondary row.
+      */}
       <section className="mx-auto max-w-6xl px-5 py-20">
-        <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">Build the animation you need</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center text-mute">Practical guides for common CSS animation workflows.</p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            ['/css-animation-generator', 'CSS animation generator', 'Create production-ready CSS motion visually.'],
-            ['/css-keyframe-generator', 'CSS keyframe generator', 'Build and edit @keyframes on a timeline.'],
-            ['/cubic-bezier-editor', 'Cubic-bezier editor', 'Design natural timing curves with live preview.'],
-            ['/tailwind-animation-generator', 'Tailwind animation generator', 'Export custom motion for Tailwind CSS.'],
-            ['/css-loading-animation-generator', 'CSS loading animation generator', 'Make smooth loaders and progress motion.'],
-          ].map(([to, title, desc]) => (
-            <Link key={to} to={to} className="rounded-2xl border border-edge/[0.08] bg-panel p-6 shadow-panel transition-colors hover:border-accent/40">
-              <h3 className="font-semibold">{title}</h3><p className="mt-2 text-[13.5px] leading-relaxed text-mute">{desc}</p>
-            </Link>
+        <FadeIn>
+          <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
+            Take one and go
+          </h2>
+        </FadeIn>
+        <FadeIn>
+          <p className="mx-auto mt-4 max-w-xl text-center text-mute">
+            {GALLERY.length} animations with the CSS ready to copy — or open any of them in the
+            editor and make it yours.
+          </p>
+        </FadeIn>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {HOME_PICKS.map((entry) => (
+            <FadeIn key={entry.slug}>
+              <Link
+                to={`/gallery/${entry.slug}`}
+                className="group block overflow-hidden rounded-2xl border border-edge/[0.08] bg-panel transition-all duration-200 hover:-translate-y-1 hover:border-accent/40 hover:shadow-float"
+              >
+                <GalleryPreview entry={entry} scale={0.56} className="!rounded-none" />
+                <div className="p-4">
+                  <h3 className="text-[14px] font-semibold group-hover:text-accent">{entry.title}</h3>
+                  <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-mute">
+                    {entry.description}
+                  </p>
+                </div>
+              </Link>
+            </FadeIn>
           ))}
         </div>
+        <FadeIn className="mt-10 text-center">
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-2 rounded-2xl border border-edge/15 bg-panel px-6 py-3 font-semibold transition-colors hover:bg-edge/[0.06]"
+          >
+            Browse all {GALLERY.length} animations
+            <ArrowRight size={16} />
+          </Link>
+        </FadeIn>
+
+        <FadeIn className="mt-12">
+          <p className="text-center text-[12px] font-semibold uppercase tracking-wider text-mute">
+            Guides
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {[
+              ['/css-animation-generator', 'CSS animation generator'],
+              ['/css-keyframe-generator', 'CSS keyframe generator'],
+              ['/cubic-bezier-editor', 'Cubic-bezier editor'],
+              ['/tailwind-animation-generator', 'Tailwind animation generator'],
+              ['/css-loading-animation-generator', 'CSS loading animations'],
+            ].map(([to, title]) => (
+              <Link
+                key={to}
+                to={to}
+                className="rounded-full border border-edge/10 bg-panel px-3.5 py-1.5 text-[12.5px] text-mute transition-colors hover:border-accent/40 hover:text-ink"
+              >
+                {title}
+              </Link>
+            ))}
+          </div>
+        </FadeIn>
       </section>
 
       {/* features */}

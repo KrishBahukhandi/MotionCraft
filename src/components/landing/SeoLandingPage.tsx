@@ -1,7 +1,14 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Check, Code2, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Code2, Copy, Lightbulb, Sparkles } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { Seo } from '@/components/Seo'
+import { GalleryPreview } from '@/components/gallery/GalleryPreview'
+import { findGalleryEntry, type GalleryEntry } from '@/lib/gallery'
+import { getFormat } from '@/lib/exporters'
+import { CodeBlock } from '@/lib/highlight'
+import { encodeDoc, buildShareUrl } from '@/lib/share'
+import { copyText } from '@/lib/utils'
 
 export type SeoPage = {
   slug: string
@@ -12,11 +19,21 @@ export type SeoPage = {
   useCases: string[]
   steps: string[]
   faq: { question: string; answer: string }[]
+  /**
+   * Gallery slugs. Without these the five pages were one template with the
+   * strings swapped — which is what a doorway page is. Each page now leads with
+   * a working animation and its real code, so the page itself is worth landing
+   * on rather than being a stop on the way to the studio.
+   */
+  featured: string
+  related: string[]
 }
 
 export const SEO_PAGES: SeoPage[] = [
   {
     slug: 'css-animation-generator',
+    featured: 'fade-in-up-animation',
+    related: ['bounce-in-animation', 'zoom-in-animation', 'card-hover-lift'],
     title: 'Free CSS Animation Generator — Visual Keyframes | MotionCraft',
     description: 'Create CSS animations visually with a canvas, keyframes and easing controls. Export clean, production-ready CSS for free — no login required.',
     h1: 'Free CSS animation generator',
@@ -30,6 +47,8 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'css-keyframe-generator',
+    featured: 'bounce-in-animation',
+    related: ['heartbeat-animation', 'floating-animation', 'shake-animation'],
     title: 'CSS Keyframe Generator — Build @keyframes Visually | MotionCraft',
     description: 'Generate CSS @keyframes with a visual timeline. Set transforms, opacity and timing functions, then export clean keyframe animation code.',
     h1: 'CSS keyframe generator',
@@ -43,6 +62,8 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'cubic-bezier-editor',
+    featured: 'elastic-entrance',
+    related: ['bounce-in-animation', 'zoom-in-animation', 'toast-notification-slide-in'],
     title: 'Cubic Bezier Editor — Visual CSS Easing Generator | MotionCraft',
     description: 'Design and preview CSS cubic-bezier easing curves visually. Adjust handles, test motion and copy the CSS timing function for free.',
     h1: 'Visual cubic-bezier editor',
@@ -56,6 +77,8 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'tailwind-animation-generator',
+    featured: 'button-hover-effect',
+    related: ['card-hover-lift', 'button-press-animation', 'accessible-focus-ring'],
     title: 'Tailwind CSS Animation Generator — Visual Keyframes | MotionCraft',
     description: 'Create Tailwind CSS animations visually, then export keyframes and animation utilities ready for your Tailwind configuration.',
     h1: 'Tailwind CSS animation generator',
@@ -69,6 +92,8 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'css-loading-animation-generator',
+    featured: 'css-loading-spinner',
+    related: ['skeleton-loading-animation', 'pulse-animation', 'ping-ripple-effect'],
     title: 'CSS Loading Animation Generator — Create Loaders Visually | MotionCraft',
     description: 'Create smooth CSS loading animations with visual keyframes, easing and presets. Export lightweight loader animations without JavaScript.',
     h1: 'CSS loading animation generator',
@@ -82,6 +107,71 @@ export const SEO_PAGES: SeoPage[] = [
   },
 ]
 
+
+/**
+ * The working example each page leads with: a running animation, its real CSS,
+ * and a link that opens the same scene in the editor.
+ */
+function LiveExample({ entry }: { entry: GalleryEntry }) {
+  const [copied, setCopied] = useState(false)
+  const [studioHref, setStudioHref] = useState('/studio')
+  const code = useMemo(
+    () => getFormat('css').generate(entry.build(), { loop: true, reducedMotion: true, minify: false }),
+    [entry]
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    encodeDoc(entry.build()).then((payload) => {
+      if (!cancelled) setStudioHref(buildShareUrl(payload, ''))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [entry])
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div>
+        <GalleryPreview entry={entry} scale={0.72} className="ring-1 ring-edge/10" />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a
+            href={studioHref}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-semibold text-white transition-all hover:brightness-110"
+          >
+            Edit this animation <ArrowRight size={15} />
+          </a>
+          <Link
+            to={`/gallery/${entry.slug}`}
+            className="inline-flex items-center gap-2 rounded-xl border border-edge/15 px-4 py-2.5 text-[14px] font-semibold transition-colors hover:bg-edge/[0.06]"
+          >
+            All formats
+          </Link>
+        </div>
+      </div>
+
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-edge/10 bg-[#0d0e14]">
+        <div className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-2.5">
+          <span className="font-mono text-[11px] text-white/40">animation.css</span>
+          <button
+            onClick={async () => {
+              if (await copyText(code)) {
+                setCopied(true)
+                setTimeout(() => setCopied(false), 1600)
+              }
+            }}
+            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/[0.08] px-3 text-[12px] font-medium text-white/90 transition-colors hover:bg-white/[0.14]"
+          >
+            {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+            {copied ? 'Copied' : 'Copy CSS'}
+          </button>
+        </div>
+        <CodeBlock code={code} language="css" className="max-h-[340px] !rounded-none" />
+      </div>
+    </div>
+  )
+}
+
 export function findSeoPage(slug?: string) {
   return SEO_PAGES.find((page) => page.slug === slug)
 }
@@ -90,6 +180,11 @@ export function SeoLandingPage() {
   const page = findSeoPage(useParams().slug)
   if (!page) return <LandingNotFound />
 
+  const featured = findGalleryEntry(page.featured)
+  const related = page.related
+    .map((slug) => findGalleryEntry(slug))
+    .filter((e): e is GalleryEntry => !!e)
+
   return (
     <main className="min-h-screen bg-bg text-ink">
       <Seo title={page.title} description={page.description} path={`/${page.slug}`} />
@@ -97,6 +192,55 @@ export function SeoLandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center px-5"><Link to="/" className="flex items-center gap-2"><Logo size={26} /><span className="font-bold">MotionCraft</span></Link><Link to="/studio" className="ml-auto rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Launch Studio</Link></div>
       </nav>
       <section className="mc-hero-glow px-5 py-20 md:py-28"><div className="mx-auto max-w-3xl text-center"><p className="mb-4 inline-flex items-center gap-2 rounded-full border border-edge/10 bg-panel px-3 py-1.5 text-sm text-mute"><Sparkles size={14} className="text-accent" /> Free, local and no login</p><h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">{page.h1}</h1><p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-mute">{page.intro}</p><Link to="/studio" className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-semibold text-white">Create an animation <ArrowRight size={17} /></Link></div></section>
+      {featured && (
+        <section className="mx-auto max-w-6xl px-5 py-14">
+          <h2 className="text-3xl font-bold">Try it right here</h2>
+          <p className="mt-3 max-w-2xl leading-relaxed text-mute">
+            A working example with the exact CSS it produces. Copy it, or open it in the editor and
+            change anything.
+          </p>
+          <div className="mt-8">
+            <LiveExample entry={featured} />
+          </div>
+          <div className="mt-8 rounded-2xl border border-edge/10 bg-panel p-6">
+            <h3 className="flex items-center gap-2 text-[15px] font-semibold">
+              <Lightbulb size={16} className="text-accent" /> Why it is built this way
+            </h3>
+            <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-mute">{featured.note}</p>
+          </div>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section className="border-y border-edge/[0.07] bg-panel/40 px-5 py-16">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 className="text-3xl font-bold">More ready-made animations</h2>
+              <Link to="/gallery" className="text-[14px] font-semibold text-accent hover:underline">
+                Browse all animations →
+              </Link>
+            </div>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {related.map((entry) => (
+                <Link
+                  key={entry.slug}
+                  to={`/gallery/${entry.slug}`}
+                  className="group overflow-hidden rounded-2xl border border-edge/[0.08] bg-bg transition-all duration-200 hover:-translate-y-1 hover:border-accent/40"
+                >
+                  <GalleryPreview entry={entry} scale={0.56} className="!rounded-none" />
+                  <div className="p-4">
+                    <h3 className="text-[14px] font-semibold group-hover:text-accent">{entry.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-mute">
+                      {entry.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="mx-auto max-w-5xl px-5 py-16"><h2 className="text-3xl font-bold">What you can do</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{page.useCases.map((item) => <div key={item} className="rounded-2xl border border-edge/10 bg-panel p-6"><Check className="text-accent" size={20} /><p className="mt-4 leading-relaxed text-mute">{item}</p></div>)}</div></section>
       <section className="border-y border-edge/[0.07] bg-panel/40 px-5 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-bold">How it works</h2><ol className="mt-8 grid gap-5 md:grid-cols-3">{page.steps.map((step, index) => <li key={step} className="rounded-2xl bg-bg p-6"><span className="text-2xl font-extrabold text-accent">0{index + 1}</span><p className="mt-3 leading-relaxed text-mute">{step}</p></li>)}</ol></div></section>
       <section className="mx-auto max-w-3xl px-5 py-16"><h2 className="text-3xl font-bold">Frequently asked questions</h2><div className="mt-7 space-y-4">{page.faq.map((item) => <article key={item.question} className="rounded-2xl border border-edge/10 bg-panel p-6"><h3 className="font-semibold">{item.question}</h3><p className="mt-3 leading-relaxed text-mute">{item.answer}</p></article>)}</div></section>
