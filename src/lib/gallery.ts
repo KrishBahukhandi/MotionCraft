@@ -2,6 +2,7 @@ import type { Doc, StudioElement } from './types'
 import { COMPONENT_PRESETS, buildComponent } from './components'
 import { PRESETS, presetTracks } from './presets'
 import { DEFAULT_TRANSITION } from './elements'
+import { PATH_SHAPES } from './properties'
 import { uid } from './utils'
 
 /**
@@ -58,7 +59,7 @@ function emptyDoc(name: string, duration: number): Doc {
   }
 }
 
-type ShapeKind = 'square' | 'card' | 'pill' | 'text' | 'dot'
+type ShapeKind = 'square' | 'card' | 'pill' | 'text' | 'dot' | 'path'
 
 /** A neutral subject for motion presets that need something to move. */
 function shape(kind: ShapeKind, name: string): StudioElement {
@@ -96,12 +97,32 @@ function shape(kind: ShapeKind, name: string): StudioElement {
       text: 'Motion that ships',
     },
     dot: { width: 64, height: 64, backgroundColor: '#22d3ee', borderRadius: 999 },
+    // stroke-dashoffset needs a stroke to act on; on a div it animates nothing
+    path: {
+      width: 200,
+      height: 200,
+      backgroundColor: '#00000000',
+      d: PATH_SHAPES.find((s) => s.value === 'signature')!.d,
+      strokeColor: '#8b7bff',
+      strokeWidth: 4,
+      strokeDash: 100,
+      strokeOffset: 0,
+    },
   }
   const b = base[kind]
   return {
     id: uid('el'),
     name,
-    type: kind === 'card' ? 'card' : kind === 'pill' ? 'button' : kind === 'text' ? 'text' : 'rect',
+    type:
+      kind === 'card'
+        ? 'card'
+        : kind === 'pill'
+          ? 'button'
+          : kind === 'text'
+            ? 'text'
+            : kind === 'path'
+              ? 'path'
+              : 'rect',
     visible: true,
     locked: false,
     groupId: null,
@@ -355,7 +376,7 @@ export const GALLERY: GalleryEntry[] = [
     category: 'Text',
     tags: ['svg', 'stroke', 'draw', 'line'],
     note: 'Setting pathLength="100" on the path normalises its length, so the dash values become percentages and the same CSS works for any shape. Without it you have to measure each path in JavaScript first.',
-    build: () => motionScene('draw-line', 'square', 'Draw Line'),
+    build: () => motionScene('draw-line', 'path', 'Draw Line'),
   },
 
   // -------------------------------------------------------------- Entrances

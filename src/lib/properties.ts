@@ -291,6 +291,9 @@ export function offsetPathOf(p: BaseProps): string | null {
  * (composite values like transform/filter/clip-path are emitted whole when any
  * member key matches).
  */
+/** Props whose registry default is not the CSS default, so it must be written. */
+const ALWAYS_EMIT = new Set(STROKE_KEYS)
+
 export function cssDecls(p: BaseProps, only: Set<string> | null = null): Record<string, string> {
   const out: Record<string, string> = {}
   const wants = (keys: string[]) => !only || keys.some((k) => only.has(k))
@@ -327,10 +330,14 @@ export function cssDecls(p: BaseProps, only: Set<string> | null = null): Record<
     if (only && !only.has(key)) continue
     const v = p[key]
     if (v === undefined) continue
-    // Skip defaults in base rules to keep output clean (always emit in keyframes)
+    // Skip defaults in base rules to keep output clean (always emit in keyframes).
+    // Stroke is exempt: SVG's own default is `stroke: none`, so dropping a value
+    // that merely matches *our* default exports a path that draws nothing.
     if (!only) {
       const propDef = PROP_MAP.get(key)
-      if (propDef && v === propDef.def && key !== 'backgroundColor') continue
+      if (propDef && v === propDef.def && key !== 'backgroundColor' && !ALWAYS_EMIT.has(key)) {
+        continue
+      }
     }
     out[def.css] = def.toCss(v)
   }

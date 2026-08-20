@@ -31,7 +31,9 @@ import { useTheme } from '@/hooks/useTheme'
 import { CodeBlock } from '@/lib/highlight'
 import { PRESETS } from '@/lib/presets'
 import { GALLERY, findGalleryEntry } from '@/lib/gallery'
+import { docStylesheet } from '@/lib/cssgen'
 import { GalleryPreview } from '@/components/gallery/GalleryPreview'
+import { HeroStudio } from './HeroStudio'
 import { Kbd } from '@/components/ui/primitives'
 import { Seo } from '@/components/Seo'
 
@@ -159,7 +161,7 @@ export function Landing() {
       {/* hero */}
       <header className="mc-hero-glow relative overflow-hidden">
         <div className="mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-20 md:grid-cols-2 md:pt-28">
-          <div className="flex flex-col items-start justify-center">
+          <div className="flex min-w-0 flex-col items-start justify-center">
             <FadeIn immediate className="mb-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-edge/10 bg-panel/70 px-3 py-1.5 text-xs font-medium text-mute backdrop-blur">
                 <Sparkles size={12} className="text-accent" />
@@ -201,10 +203,13 @@ export function Landing() {
             </FadeIn>
           </div>
 
-          {/* live demo — painted immediately; it is a large above-the-fold
-              block and a fade-in would make it the delayed LCP element */}
-          <div className="relative">
-            <HeroDemo />
+          {/* The real editor, not a picture of one: a gallery scene sampled by
+              the same engine the studio canvas uses, with a playhead the
+              visitor can drag. Painted immediately — it is a large
+              above-the-fold block, and a fade-in would make it the delayed
+              LCP element. */}
+          <div className="relative min-w-0">
+            <HeroStudio />
           </div>
         </div>
       </header>
@@ -366,7 +371,9 @@ export function Landing() {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                <span className="ml-2 font-mono text-[11px] text-white/40">animation.css</span>
+                <span className="ml-2 font-mono text-[11px] text-white/40">
+                  {SAMPLE_ENTRY ? `${SAMPLE_ENTRY.slug}.css` : 'animation.css'}
+                </span>
               </div>
               <CodeBlock code={SAMPLE_CSS} language="css" className="max-h-[380px] !rounded-t-none !bg-transparent" />
             </div>
@@ -490,91 +497,6 @@ export function Landing() {
   )
 }
 
-// ---------------------------------------------------------------- hero demo
-
-function HeroDemo() {
-  return (
-    <div className="relative mx-auto aspect-[4/3] w-full max-w-[520px] overflow-hidden rounded-3xl border border-edge/10 bg-[#101116] shadow-float">
-      <style dangerouslySetInnerHTML={{ __html: HERO_CSS }} />
-      {/* fake studio chrome */}
-      <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-2.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-        <span className="ml-2 font-mono text-[10.5px] text-white/35">hero-scene · 2.4s · loop</span>
-      </div>
-      <div className="relative h-[calc(100%-80px)]">
-        <div className="hero-orb" />
-        <div className="hero-card">
-          <div className="hero-card-icon" />
-          <div className="hero-card-line" style={{ width: '70%' }} />
-          <div className="hero-card-line" style={{ width: '45%', opacity: 0.5 }} />
-        </div>
-        <div className="hero-badge">Shipped ✓</div>
-        <div className="hero-dot d1" />
-        <div className="hero-dot d2" />
-        <div className="hero-dot d3" />
-      </div>
-      {/* fake timeline */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-white/[0.06] bg-black/30 px-4 py-2.5">
-        <div className="relative h-2 rounded-full bg-white/[0.07]">
-          <div className="hero-playhead" />
-          <span className="absolute left-[18%] top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-[#f5b83d]" />
-          <span className="absolute left-[42%] top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-[#f5b83d]" />
-          <span className="absolute left-[71%] top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 rounded-[2px] bg-[#f5b83d]" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const HERO_CSS = `
-.hero-orb {
-  position: absolute; left: 8%; top: 14%; width: 120px; height: 120px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #8b7bff, #4f7dff 70%);
-  opacity: .9;
-  animation: hero-orb 4.8s ease-in-out infinite;
-}
-@keyframes hero-orb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(26px, -18px) scale(1.12); }
-}
-.hero-card {
-  position: absolute; right: 10%; top: 20%; width: 180px; padding: 16px;
-  border-radius: 18px; background: rgba(255,255,255,.055);
-  border: 1px solid rgba(255,255,255,.09); backdrop-filter: blur(8px);
-  animation: hero-card 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-}
-@keyframes hero-card {
-  0% { transform: translateY(46px) scale(.92); opacity: 0; }
-  22%, 78% { transform: translateY(0) scale(1); opacity: 1; }
-  95%, 100% { transform: translateY(-10px) scale(.97); opacity: 0; }
-}
-.hero-card-icon { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #8b7bff, #22d3ee); margin-bottom: 12px; }
-.hero-card-line { height: 8px; border-radius: 99px; background: rgba(255,255,255,.25); margin-top: 8px; }
-.hero-badge {
-  position: absolute; left: 14%; bottom: 18%; padding: 8px 14px; border-radius: 99px;
-  background: #22d3ee; color: #06281e; font-size: 12px; font-weight: 700;
-  animation: hero-badge 2.4s ease-in-out infinite;
-}
-@keyframes hero-badge {
-  0%, 30% { transform: scale(0); opacity: 0; }
-  45% { transform: scale(1.15); opacity: 1; }
-  52%, 85% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0); opacity: 0; }
-}
-.hero-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #f5b83d; }
-.hero-dot.d1 { right: 24%; bottom: 24%; animation: hero-dot 2s ease-in-out infinite; }
-.hero-dot.d2 { right: 20%; bottom: 30%; animation: hero-dot 2s ease-in-out .3s infinite; opacity: .7; }
-.hero-dot.d3 { right: 16%; bottom: 22%; animation: hero-dot 2s ease-in-out .6s infinite; opacity: .45; }
-@keyframes hero-dot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-.hero-playhead {
-  position: absolute; top: -4px; bottom: -4px; width: 2px; border-radius: 2px; background: #8b7bff;
-  animation: hero-playhead 2.4s linear infinite;
-}
-@keyframes hero-playhead { from { left: 0%; } to { left: 100%; } }
-`
-
 // ---------------------------------------------------------------- marquee
 
 function PresetMarquee({ reverse, row }: { reverse: boolean; row: number }) {
@@ -682,31 +604,12 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-const SAMPLE_CSS = `.hero-card {
-  width: 260px;
-  height: 170px;
-  background: #1c1e2a;
-  border-radius: 20px;
-  animation: hero-card-anim 1200ms linear 0ms infinite both;
-  will-change: transform, opacity;
-}
-
-@keyframes hero-card-anim {
-  0% {
-    transform: translate3d(0, 46px, 0) scale(0.92, 0.92);
-    opacity: 0;
-    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  58.33% {
-    transform: translate3d(0, 0, 0) scale(1, 1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1, 1);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-card { animation: none; }
-}`
+/*
+ * Not a hand-written sample: this is `docStylesheet` run over the same gallery
+ * scene the hero opens with. Anything the generator learns to emit shows up
+ * here without anyone remembering to update a string.
+ */
+const SAMPLE_ENTRY = findGalleryEntry('elastic-entrance')
+const SAMPLE_CSS = SAMPLE_ENTRY
+  ? docStylesheet(SAMPLE_ENTRY.build(), { loop: true, reducedMotion: true, minify: false }).trim()
+  : ''

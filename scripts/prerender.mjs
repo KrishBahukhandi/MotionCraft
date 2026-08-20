@@ -145,6 +145,41 @@ for (const page of SEO_PAGES) {
   writeFileSync(path.join(root, 'dist', '404.html'), out)
 }
 
+/*
+ * The studio is a client-only app, but the rewrite handed it dist/index.html —
+ * which is the prerendered *homepage*. React went looking for the editor, found
+ * a whole landing page, threw the markup away and re-rendered the root from
+ * scratch: a flash of the wrong page on every visit to /studio.
+ *
+ * Its own shell, with the root left empty, puts main.tsx back on the createRoot
+ * path it was written for. No canonical, because an empty shell is not a
+ * document worth pointing at.
+ */
+{
+  let out = template
+  out = replaceOne(
+    out,
+    /<title>[\s\S]*?<\/title>/,
+    () => '<title>Studio — MotionCraft</title>',
+    '<title> (studio)'
+  )
+  out = replaceOne(
+    out,
+    /(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>)/,
+    (_m, open, close) => `${open}The MotionCraft editor: design CSS animations on a canvas and timeline, then export the code.${close}`,
+    'meta description (studio)'
+  )
+  out = replaceOne(
+    out,
+    /(<meta\s+name="robots"\s+content=")[^"]*("\s*\/?>)/,
+    (_m, open, close) => `${open}noindex, follow${close}`,
+    'meta robots (studio)'
+  )
+  out = replaceOne(out, /\n?\s*<link\s+rel="canonical"[^>]*>/, () => '', 'canonical (studio)')
+  mkdirSync(path.join(root, 'dist', 'studio'), { recursive: true })
+  writeFileSync(path.join(root, 'dist', 'studio', 'index.html'), out)
+}
+
 /**
  * Gallery pages: an index plus one page per animation. Each is a real scene
  * rendered inline — the markup and its CSS are in the HTML, so the animation is

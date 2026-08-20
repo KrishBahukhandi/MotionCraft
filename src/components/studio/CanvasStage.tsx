@@ -17,8 +17,7 @@ import {
   sampleNodeInState,
   ungroupedElements,
 } from '@/lib/engine'
-import { clipOf, filterOf, maskOf, transformOf } from '@/lib/properties'
-import { ElementContent } from './ElementView'
+import { SceneNodes, groupStyle } from './SceneStage'
 import type { BaseProps, Group, StudioElement, StudioNode } from '@/lib/types'
 import { clamp } from '@/lib/utils'
 
@@ -35,29 +34,6 @@ interface Marquee {
 }
 
 const SNAP = 6
-
-/** Style for a group's container: transform only, spanning the artboard. */
-function groupStyle(g: Group, p: BaseProps, origin: string, withEffects: boolean): CSSProperties {
-  const style: CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    transform: transformOf(p),
-    transformOrigin: origin,
-  }
-  if (withEffects) {
-    style.opacity = Number(p.opacity ?? 1)
-    const f = filterOf(p)
-    if (f) style.filter = f
-    const clip = clipOf(p)
-    if (clip) style.clipPath = clip
-    const mask = maskOf(p)
-    if (mask) {
-      style.maskImage = mask
-      ;(style as Record<string, unknown>).WebkitMaskImage = mask
-    }
-  }
-  return style
-}
 
 /**
  * Map a screen-space drag delta into a group's local space, so dragging a
@@ -497,25 +473,6 @@ export function CanvasStage() {
       ? sampleNodeInState(n, time, editingState.stateId)
       : sampleNode(n, time)
 
-  /** Renders a group and everything beneath it, at any depth. */
-  const renderGroup = (g: Group): ReactElement | null => {
-    if (!g.visible) return null
-    const bb = groupBBox(doc, g.id)
-    const gp = propsFor(g)
-    return (
-      <div key={g.id} style={groupStyle(g, gp, `${bb.x + bb.w / 2}px ${bb.y + bb.h / 2}px`, true)}>
-        {childGroups(doc, g.id).map((child) => renderGroup(child))}
-        {elementsOfGroup(doc, g.id).map((el) =>
-          el.visible ? (
-            <div key={el.id} onPointerDown={(e) => onElementDown(e, el)}>
-              <ElementContent el={el} props={propsFor(el)} />
-            </div>
-          ) : null
-        )}
-      </div>
-    )
-  }
-
   /** Mirrors the group tree so overlays inherit the same transform chain. */
   const renderGroupOverlay = (g: Group): ReactElement | null => {
     if (!g.visible) return null
@@ -530,7 +487,7 @@ export function CanvasStage() {
       <div
         key={`ov-${g.id}`}
         className="pointer-events-none absolute inset-0"
-        style={groupStyle(g, gp, `${bb.x + bb.w / 2}px ${bb.y + bb.h / 2}px`, false)}
+        style={groupStyle(gp, `${bb.x + bb.w / 2}px ${bb.y + bb.h / 2}px`, false)}
       >
         {groupSelected && bb.w > 0 && (
           <div
@@ -573,14 +530,16 @@ export function CanvasStage() {
         >
           {/* rendered scene (clipped to the artboard) */}
           <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: 8 / z }}>
-            {childGroups(doc, null).map((g) => renderGroup(g))}
-            {ungroupedElements(doc).map((el) =>
-              el.visible ? (
+            <SceneNodes
+              doc={doc}
+              time={time}
+              propsFor={propsFor}
+              wrapElement={(el, content) => (
                 <div key={el.id} onPointerDown={(e) => onElementDown(e, el)}>
-                  <ElementContent el={el} props={propsFor(el)} />
+                  {content}
                 </div>
-              ) : null
-            )}
+              )}
+            />
           </div>
 
           {/* selection overlays — mirrored group transforms, never clipped */}

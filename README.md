@@ -119,10 +119,17 @@ node scripts/prerender.mjs        # render each route into dist/
 ```
 
 `main.tsx` calls `hydrateRoot` when that markup is present and `createRoot` otherwise, so
-`npm run dev` is unaffected. Also in place: per-route canonical URLs, Open Graph and Twitter
-cards, a generated `sitemap.xml`, `robots.txt`, and JSON-LD for `WebSite`,
+`npm run dev` is unaffected. `/studio` gets its own shell with an empty root — it is a
+client-only app, and handing it the prerendered homepage made React discard the markup and
+re-render, flashing the wrong page. Also in place: per-route canonical URLs, Open Graph and
+Twitter cards, a generated `sitemap.xml`, `robots.txt`, and JSON-LD for `WebSite`,
 `SoftwareApplication` and `FAQPage`. Above-the-fold content renders visible rather than
 fading in, so it is not excluded from LCP.
+
+The hero is the editor rather than a picture of one: it renders a gallery scene through the
+studio's own `SceneNodes`, sampled by the same engine the canvas uses, with a draggable
+playhead and a live read-out of the computed `transform`. The code panel below it is
+`docStylesheet` run over that same scene, so neither can drift from what the tool does.
 
 `npm run og` regenerates `public/og-image.png`. It is kept out of `build` on purpose —
 `sharp` is a native dependency and shouldn't be able to break a deploy.
@@ -145,6 +152,7 @@ The engine in `src/lib` is dependency-free and UI-agnostic:
 | `exporters.ts` · `tailwind.ts` | The 12 output formats |
 | `presets.ts` · `components.ts` | 58 motion presets and 17 component presets, as data |
 | `share.ts` | Scene ⇄ URL fragment codec |
+| `SceneStage.tsx` | The scene renderer, shared by the studio canvas and the landing page |
 
 Because everything animatable is a `NodeBase`, adding a node kind or an animatable property
 needs no changes to the timeline, inspector or generator. Exporters and presets are plain

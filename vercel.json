@@ -6,11 +6,11 @@
   "rewrites": [
     {
       "source": "/studio",
-      "destination": "/index.html"
+      "destination": "/studio/index.html"
     },
     {
       "source": "/studio/(.*)",
-      "destination": "/index.html"
+      "destination": "/studio/index.html"
     }
   ],
   "headers": [
