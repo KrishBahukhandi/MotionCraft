@@ -134,6 +134,18 @@ playhead and a live read-out of the computed `transform`. The code panel below i
 `npm run og` regenerates `public/og-image.png`. It is kept out of `build` on purpose —
 `sharp` is a native dependency and shouldn't be able to break a deploy.
 
+## Checking the gallery
+
+```bash
+npm run audit
+```
+
+Scenes are data, so they can be wrong in ways that still compile and still look
+right in the editor: a property animated on an element type that ignores it, a
+track that holds one value, a value dropped from the export because it matched a
+registry default that CSS does not share. `scripts/audit-scenes.mjs` walks every
+scene and reports those, and exits non-zero so it can gate a release.
+
 ## Architecture
 
 React 18 · TypeScript · Vite · Tailwind CSS · Zustand + Immer · Framer Motion (landing UI) ·

@@ -157,6 +157,7 @@ const DIRECT_CSS: Record<string, { css: string; toCss: (v: number | string) => s
   color: { css: 'color', toCss: (v) => String(v) },
   fontSize: { css: 'font-size', toCss: (v) => `${fmt(Number(v))}px` },
   letterSpacing: { css: 'letter-spacing', toCss: (v) => `${fmt(Number(v))}px` },
+  fontWeight: { css: 'font-weight', toCss: (v) => fmt(Number(v)) },
   strokeWidth: { css: 'stroke-width', toCss: (v) => fmt(Number(v)) },
   strokeColor: { css: 'stroke', toCss: (v) => String(v) },
   strokeDash: { css: 'stroke-dasharray', toCss: (v) => fmt(Number(v)) },
@@ -291,8 +292,21 @@ export function offsetPathOf(p: BaseProps): string | null {
  * (composite values like transform/filter/clip-path are emitted whole when any
  * member key matches).
  */
-/** Props whose registry default is not the CSS default, so it must be written. */
-const ALWAYS_EMIT = new Set(STROKE_KEYS)
+/**
+ * Base rules skip a value that matches the registry default, which keeps the
+ * output clean — but that is only sound where CSS agrees on the default. Where
+ * it does not, omitting the declaration silently changes the result: a white
+ * label falls back to inherited text colour, a 100px box to `width: auto`, a
+ * stroke to `none`. These are always written out.
+ */
+const CSS_DEFAULT_DIFFERS = new Set([
+  'width',
+  'height',
+  'backgroundColor',
+  'color',
+  'fontSize',
+  ...STROKE_KEYS,
+])
 
 export function cssDecls(p: BaseProps, only: Set<string> | null = null): Record<string, string> {
   const out: Record<string, string> = {}
@@ -330,14 +344,10 @@ export function cssDecls(p: BaseProps, only: Set<string> | null = null): Record<
     if (only && !only.has(key)) continue
     const v = p[key]
     if (v === undefined) continue
-    // Skip defaults in base rules to keep output clean (always emit in keyframes).
-    // Stroke is exempt: SVG's own default is `stroke: none`, so dropping a value
-    // that merely matches *our* default exports a path that draws nothing.
+    // Skip defaults in base rules to keep output clean (always emit in keyframes)
     if (!only) {
       const propDef = PROP_MAP.get(key)
-      if (propDef && v === propDef.def && key !== 'backgroundColor' && !ALWAYS_EMIT.has(key)) {
-        continue
-      }
+      if (propDef && v === propDef.def && !CSS_DEFAULT_DIFFERS.has(key)) continue
     }
     out[def.css] = def.toCss(v)
   }

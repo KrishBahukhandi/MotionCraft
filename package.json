@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr --logLevel warn && node scripts/prerender.mjs",
     "og": "node scripts/og-image.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit": "node scripts/audit-scenes.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
