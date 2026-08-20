@@ -156,7 +156,10 @@ export function CommandPalette() {
             toast('Select an element first')
             return
           }
-          s.applyPreset(preset)
+          if (s.applyPreset(preset) === 0) {
+            toast(`“${preset.label}” cannot animate the selection`)
+            return
+          }
           s.restart()
           toast(`Applied “${preset.label}”`)
         },

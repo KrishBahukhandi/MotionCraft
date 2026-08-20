@@ -24,7 +24,7 @@ import {
   parentIdOf,
 } from '@/lib/engine'
 import { PROP_MAP } from '@/lib/properties'
-import { presetTracks, type Preset } from '@/lib/presets'
+import { presetApplies, presetTracks, type Preset } from '@/lib/presets'
 import { buildComponent, type ComponentPreset } from '@/lib/components'
 import type { ImportResult } from '@/lib/cssimport'
 import { clamp, uid } from '@/lib/utils'
@@ -175,7 +175,8 @@ export interface StudioState {
   removeKeyframe: (ref: KfRef) => void
   removeTrack: (nodeId: string, prop: string) => void
 
-  applyPreset: (preset: Preset) => void
+  /** Applies to every selected node that can use it; returns how many were changed. */
+  applyPreset: (preset: Preset) => number
   insertComponent: (preset: ComponentPreset) => void
   applyImport: (result: ImportResult) => void
   loadSharedDoc: (doc: Doc) => void
@@ -848,12 +849,18 @@ export const useStudio = create<StudioState>()(
     },
 
     applyPreset: (preset) => {
-      if (!get().selection.length) return
+      const st = get()
+      if (!st.selection.length) return 0
+      const targets = st.selection
+        .map((id) => nodeIn(st.doc, id))
+        .filter((n) => n && !n.locked && presetApplies(preset, n))
+      if (targets.length === 0) return 0
+      const usable = new Set(targets.map((n) => n!.id))
       get().pushHistory()
       set((s) => {
         for (const id of s.selection) {
           const node = nodeIn(s.doc, id)
-          if (!node || node.locked) continue
+          if (!node || !usable.has(node.id)) continue
           const start = s.time
           const end = start + preset.duration
           for (const nt of presetTracks(preset, node, start)) {
@@ -876,6 +883,7 @@ export const useStudio = create<StudioState>()(
           s.expanded[node.id] = true
         }
       })
+      return targets.length
     },
 
     insertComponent: (preset) => {

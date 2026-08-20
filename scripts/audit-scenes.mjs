@@ -8,6 +8,9 @@
  * exporter could emit. Each looked right in the editor and was wrong in the
  * code people copied, which is the failure mode worth automating away.
  *
+ * Covers all three sources: the 58 motion presets, the 17 component presets,
+ * and the 28 gallery scenes assembled from them.
+ *
  *   npm run audit
  */
 import { execFileSync } from 'node:child_process'
@@ -37,6 +40,15 @@ const {
   CLIP_KEYS,
   MASK_KEYS,
   OFFSET_KEYS,
+  PRESETS,
+  presetTracks,
+  presetApplies,
+  COMPONENT_PRESETS,
+  buildComponent,
+  createElement,
+  ELEMENT_SPECS,
+  EASINGS,
+  DOC_VERSION,
 } = await import(
   pathToFileURL(path.join(outDir, 'scene-audit-entry.js')).href
 )
@@ -52,7 +64,16 @@ function applies(node, key) {
  * Properties carried by the markup rather than the stylesheet, plus the shape
  * selectors that only exist to feed a composite builder.
  */
-const NOT_DECLARATIONS = new Set(['text', 'src', 'd', 'maskShape', 'clipShape', 'offsetPathShape'])
+const NOT_DECLARATIONS = new Set(['text', 'src', 'd', 'maskShape', 'clipShape', 'offsetPath'])
+
+const ELEMENT_TYPES = ELEMENT_SPECS.map((e) => e.type)
+const EASING_IDS = new Set(EASINGS.map((e) => e.id))
+const CUBIC = /^cubic-bezier\(\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\)$/
+const knownEasing = (e) => e === undefined || EASING_IDS.has(e) || CUBIC.test(e)
+const typesFor = (key) => {
+  const d = PROP_MAP.get(key)
+  return d ? d.types ?? ELEMENT_TYPES : []
+}
 
 /** Registry defaults that CSS agrees with, so omitting them changes nothing. */
 const SAFE_TO_DROP = new Set(['opacity', 'borderRadius', 'letterSpacing', 'strokeOffset'])
@@ -73,17 +94,20 @@ const COMPOSITE_KEYS = new Set([
 ])
 
 const findings = []
-const add = (slug, kind, detail) => findings.push({ slug, kind, detail })
+const add = (slug, kind, detail, scope = 'gallery') => findings.push({ slug, kind, detail, scope })
 let nodes = 0
 let tracks = 0
 
-for (const entry of GALLERY) {
-  const doc = entry.build()
-  const all = allNodes(doc)
+/**
+ * The per-document checks, shared by gallery scenes and component presets —
+ * both end up as a Doc, and a bad one fails the same way.
+ */
+function auditDoc(id, scope, doc) {
+    const all = allNodes(doc)
   const animated = all.filter((n) => n.tracks.some((t) => t.keyframes.length > 0))
 
   if (animated.length === 0 && !all.some((n) => n.states?.length)) {
-    add(entry.slug, 'no-animation', 'no keyframe tracks and no interaction states')
+    add(id, 'no-animation', 'no keyframe tracks and no interaction states', scope)
   }
 
   for (const n of animated) {
@@ -93,18 +117,18 @@ for (const entry of GALLERY) {
       if (tr.keyframes.length === 0) continue
       tracks++
       if (!applies(n, tr.prop)) {
-        add(entry.slug, 'prop-not-applicable', `"${n.name}" (${kind}) animates ${tr.prop}`)
+        add(id, 'prop-not-applicable', `"${n.name}" (${kind}) animates ${tr.prop}`, scope)
         continue
       }
       const values = new Set(tr.keyframes.map((k) => String(k.value)))
       if (tr.keyframes.length === 1) {
-        add(entry.slug, 'single-keyframe', `"${n.name}" ${tr.prop} has one keyframe`)
+        add(id, 'single-keyframe', `"${n.name}" ${tr.prop} has one keyframe`, scope)
       } else if (values.size === 1) {
-        add(entry.slug, 'flat-track', `"${n.name}" ${tr.prop} holds ${[...values][0]} throughout`)
+        add(id, 'flat-track', `"${n.name}" ${tr.prop} holds ${[...values][0]} throughout`, scope)
       }
       const past = tr.keyframes.filter((k) => k.time > doc.duration)
       if (past.length) {
-        add(entry.slug, 'keyframe-past-end', `"${n.name}" ${tr.prop}: ${past.length} beyond ${doc.duration}ms`)
+        add(id, 'keyframe-past-end', `"${n.name}" ${tr.prop}: ${past.length} beyond ${doc.duration}ms`, scope)
       }
     }
 
@@ -113,15 +137,15 @@ for (const entry of GALLERY) {
     for (let i = 0; i <= 12; i++) {
       frames.add(JSON.stringify(cssDecls(sampleNode(n, (doc.duration * i) / 12))))
     }
-    if (frames.size === 1) add(entry.slug, 'static-render', `"${n.name}" is identical at every time`)
+    if (frames.size === 1) add(id, 'static-render', `"${n.name}" is identical at every time`, scope)
   }
 
   for (const n of all) {
     for (const st of n.states ?? []) {
       const keys = Object.keys(st.overrides ?? {})
-      if (keys.length === 0) add(entry.slug, 'empty-state', `"${n.name}" ${st.trigger} overrides nothing`)
+      if (keys.length === 0) add(id, 'empty-state', `"${n.name}" ${st.trigger} overrides nothing`, scope)
       for (const k of keys) {
-        if (!applies(n, k)) add(entry.slug, 'state-prop-not-applicable', `"${n.name}" ${st.trigger} sets ${k}`)
+        if (!applies(n, k)) add(id, 'state-prop-not-applicable', `"${n.name}" ${st.trigger} sets ${k}`, scope)
       }
     }
   }
@@ -131,7 +155,7 @@ for (const entry of GALLERY) {
     for (const key of Object.keys(n.base)) {
       if (NOT_DECLARATIONS.has(key)) continue
       if (Object.keys(cssDecls(n.base, new Set([key]))).length === 0) {
-        add(entry.slug, 'lost-in-export', `"${n.name}" sets ${key}, which no exporter can emit`)
+        add(id, 'lost-in-export', `"${n.name}" sets ${key}, which no exporter can emit`, scope)
       }
     }
     // …and a value that merely matches our default must not vanish when CSS
@@ -142,26 +166,109 @@ for (const entry of GALLERY) {
       if (def === undefined || value !== def || NOT_DECLARATIONS.has(key)) continue
       const single = Object.keys(cssDecls({ [key]: value }, new Set([key])))[0]
       if (single && emitted[single] === undefined && !SAFE_TO_DROP.has(key) && !COMPOSITE_KEYS.has(key)) {
-        add(entry.slug, 'default-dropped', `"${n.name}" ${key}=${JSON.stringify(value)} is omitted from the base rule`)
+        add(id, 'default-dropped', `"${n.name}" ${key}=${JSON.stringify(value)} is omitted from the base rule`, scope)
       }
     }
   }
 
   if (!docStylesheet(doc, { loop: true, reducedMotion: true, minify: false }).trim()) {
-    add(entry.slug, 'empty-stylesheet', 'generates no CSS at all')
+    add(id, 'empty-stylesheet', 'generates no CSS at all', scope)
   }
 }
 
-console.log(`\naudited ${GALLERY.length} scenes — ${nodes} animated nodes, ${tracks} tracks\n`)
+for (const entry of GALLERY) auditDoc(entry.slug, 'gallery', entry.build())
+
+// ------------------------------------------------------------ motion presets
+//
+// A motion preset is a template, so the question is different: can it move
+// anything, and does the tool know which element types it needs?
+for (const preset of PRESETS) {
+  const props = Object.keys(preset.tracks)
+  if (!(preset.duration > 0)) add(preset.id, 'bad-duration', `duration=${preset.duration}`, 'motion')
+  if (props.length === 0) add(preset.id, 'no-tracks', 'animates nothing', 'motion')
+
+  for (const [prop, stops] of Object.entries(preset.tracks)) {
+    if (!PROP_MAP.has(prop)) {
+      add(preset.id, 'unknown-prop', `"${prop}" is not a registered property`, 'motion')
+      continue
+    }
+    if (stops.length < 2) add(preset.id, 'single-stop', `${prop} has ${stops.length} stop(s)`, 'motion')
+    for (const st of stops) {
+      if (st.p < 0 || st.p > 1) add(preset.id, 'stop-out-of-range', `${prop} stop at p=${st.p}`, 'motion')
+      // an unregistered easing silently degrades to linear
+      if (!knownEasing(st.e)) add(preset.id, 'unknown-easing', `${prop} uses "${st.e}"`, 'motion')
+    }
+  }
+  for (const key of Object.keys(preset.base ?? {})) {
+    if (!PROP_MAP.has(key) && !NOT_DECLARATIONS.has(key)) {
+      add(preset.id, 'unknown-base-prop', `base sets "${key}"`, 'motion')
+    }
+  }
+  for (const [prop, setup] of Object.entries(preset.setup ?? {})) {
+    if (!PROP_MAP.has(setup.key) && !NOT_DECLARATIONS.has(setup.key)) {
+      add(preset.id, 'unknown-setup-prop', `setup for ${prop} sets "${setup.key}"`, 'motion')
+    }
+  }
+
+  const valid = ELEMENT_TYPES.filter((t) => props.every((k) => typesFor(k).includes(t)))
+  if (props.length && valid.length === 0) {
+    add(preset.id, 'inert-everywhere', `no element type supports ${props.join(' + ')}`, 'motion')
+  }
+  if (valid.length === 0) continue
+
+  // apply it to a real subject and confirm the result moves
+  const el = createElement(valid[0], 240, 160)
+  Object.assign(el.base, preset.base ?? {})
+  for (const [prop, setup] of Object.entries(preset.setup ?? {})) {
+    if (preset.tracks[prop]) el.base[setup.key] = setup.value
+  }
+  el.tracks = presetTracks(preset, el, 0)
+  if (!presetApplies(preset, el)) {
+    add(preset.id, 'guard-disagrees', `presetApplies() rejects a ${valid[0]} the registry allows`, 'motion')
+  }
+  for (const tr of el.tracks) {
+    const values = new Set(tr.keyframes.map((k) => String(k.value)))
+    if (values.size === 1) {
+      add(preset.id, 'flat-track', `${tr.prop} evaluates to ${[...values][0]} at every stop`, 'motion')
+    }
+  }
+  const frames = new Set()
+  for (let i = 0; i <= 12; i++) {
+    frames.add(JSON.stringify(cssDecls(sampleNode(el, (preset.duration * i) / 12))))
+  }
+  if (frames.size === 1) add(preset.id, 'static-render', `on a ${valid[0]}, nothing changes`, 'motion')
+  const doc = {
+    v: DOC_VERSION, name: preset.id, width: 480, height: 320, background: '#101116',
+    duration: preset.duration, elements: [el], groups: [], variables: [],
+  }
+  if (!/@keyframes/.test(docStylesheet(doc, { loop: true, reducedMotion: true, minify: false }))) {
+    add(preset.id, 'no-keyframes', `on a ${valid[0]}, generates no @keyframes`, 'motion')
+  }
+}
+
+// --------------------------------------------------------- component presets
+for (const preset of COMPONENT_PRESETS) {
+  const built = buildComponent(preset, 240, 160)
+  auditDoc(preset.id, 'component', {
+    v: DOC_VERSION, name: preset.label, width: 480, height: 320, background: '#101116',
+    duration: Math.max(built.duration, 1), elements: built.elements,
+    groups: built.group ? [built.group] : [], variables: [],
+  })
+}
+
+console.log(
+  `\naudited ${PRESETS.length} motion presets, ${COMPONENT_PRESETS.length} component presets ` +
+    `and ${GALLERY.length} gallery scenes — ${nodes} animated nodes, ${tracks} tracks\n`
+)
 if (findings.length === 0) {
   console.log('no findings')
   process.exit(0)
 }
 const byKind = {}
-for (const f of findings) (byKind[f.kind] ??= []).push(f)
+for (const f of findings) (byKind[`${f.scope}: ${f.kind}`] ??= []).push(f)
 for (const [kind, list] of Object.entries(byKind)) {
   console.log(`${kind} (${list.length})`)
-  for (const f of list) console.log(`  ${f.slug.padEnd(32)} ${f.detail}`)
+  for (const f of list) console.log(`  ${f.slug.padEnd(28)} ${f.detail}`)
   console.log()
 }
 process.exit(1)

@@ -75,6 +75,8 @@ reveals, inserted with their motion wired. Multi-part presets come grouped, and 
 animates as a group so the whole bar moves as one.
 
 **58 motion presets** across entrances, exits, attention, reveals, path and effects.
+Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
+on a group — are shown unavailable rather than applied to no effect.
 
 **Nested groups** — a group is itself animatable, with its own base properties and keyframe
 tracks, and `transform-origin` computed from its subtree's bounding box. Groups nest to any
@@ -140,11 +142,13 @@ playhead and a live read-out of the computed `transform`. The code panel below i
 npm run audit
 ```
 
-Scenes are data, so they can be wrong in ways that still compile and still look
-right in the editor: a property animated on an element type that ignores it, a
-track that holds one value, a value dropped from the export because it matched a
-registry default that CSS does not share. `scripts/audit-scenes.mjs` walks every
-scene and reports those, and exits non-zero so it can gate a release.
+Presets and scenes are data, so they can be wrong in ways that still compile and
+still look right in the editor: a property animated on an element type that
+ignores it, a track that holds one value, an easing id that silently degrades to
+linear, a value dropped from the export because it matched a registry default
+that CSS does not share. `scripts/audit-scenes.mjs` walks all 58 motion presets,
+17 component presets and 28 gallery scenes, and exits non-zero so it can gate a
+release.
 
 ## Architecture
 

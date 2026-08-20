@@ -1,4 +1,6 @@
 import type { BaseProps, StudioNode, Track } from './types'
+import { isGroup } from './types'
+import { PROP_MAP } from './properties'
 import { uid } from './utils'
 
 type V = number | string | ((base: BaseProps) => number | string)
@@ -342,8 +344,7 @@ export const PRESETS: Preset[] = [
       { p: 0.65, v: 24 },
       { p: 1, v: 24 },
     ],
-    shadowColor: [{ p: 0, v: '#22d3eeb0' }, { p: 1, v: '#22d3eeb0' }],
-  }),
+  }, { shadowColor: '#22d3eeb0' }),
   p('glitch', 'Glitch', 'Effects', 800, {
     x: [
       { p: 0, v: (b) => n(b, 'x'), e: 'linear' },
@@ -497,6 +498,24 @@ export const PRESET_CATEGORIES: PresetCategory[] = [
  * Materialize preset tracks for a node, starting at `startTime` (ms).
  * Values are resolved against the node's base props.
  */
+/**
+ * Whether a preset can move this node at all.
+ *
+ * A stroke preset means nothing on a rectangle, and a shadow or radius preset
+ * means nothing on a group: the keyframes get written, the timeline fills up
+ * and the canvas sits still. The inspector already hides properties a node
+ * cannot use — this is the same rule, for the panel that applies them in bulk.
+ */
+export function presetApplies(preset: Preset, node: StudioNode): boolean {
+  const props = Object.keys(preset.tracks)
+  if (props.length === 0) return false
+  return props.every((key) => {
+    const def = PROP_MAP.get(key)
+    if (!def) return false
+    return isGroup(node) ? !!def.onGroup : !def.types || def.types.includes(node.type)
+  })
+}
+
 export function presetTracks(preset: Preset, node: StudioNode, startTime: number): Track[] {
   const out: Track[] = []
   for (const [prop, stops] of Object.entries(preset.tracks)) {

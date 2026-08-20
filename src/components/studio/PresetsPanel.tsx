@@ -1,15 +1,31 @@
 import { useMemo, useState } from 'react'
 import { Search, Sparkles } from 'lucide-react'
 import { useStudio } from '@/store/studio'
-import { PRESETS, PRESET_CATEGORIES, presetTracks, type Preset } from '@/lib/presets'
+import { PRESETS, PRESET_CATEGORIES, presetApplies, presetTracks, type Preset } from '@/lib/presets'
 import { generateElementCss } from '@/lib/cssgen'
+import { findNode } from '@/lib/engine'
+import { PROP_MAP } from '@/lib/properties'
 import { DEFAULT_TRANSITION } from '@/lib/elements'
-import type { Doc, StudioElement } from '@/lib/types'
+import type { Doc, StudioElement, StudioNode } from '@/lib/types'
 import { toast } from '@/components/ui/primitives'
 
 /** Presets that draw an SVG stroke need a real <path> to preview against. */
 export function isStrokePreset(preset: Preset): boolean {
   return Object.keys(preset.tracks).some((p) => p.startsWith('stroke'))
+}
+
+/** What a preset needs, phrased for a toast: "a path element", "an element". */
+function describeTargets(preset: Preset): string {
+  const props = Object.keys(preset.tracks)
+  const types = new Set<string>()
+  let groupOk = true
+  for (const key of props) {
+    const def = PROP_MAP.get(key)
+    if (!def?.onGroup) groupOk = false
+    for (const t of def?.types ?? []) types.add(t)
+  }
+  if (types.size) return `${[...types].join(' or ')} element`
+  return groupOk ? 'an element or group' : 'an element, not a group'
 }
 
 const PREVIEW_PATH = 'M 8 70 L 30 26 L 52 62 L 74 22 L 92 52'
@@ -93,7 +109,13 @@ let previewStyles: string | null = null
 export function PresetsPanel() {
   const s = useStudio
   const selection = useStudio((st) => st.selection)
+  const doc = useStudio((st) => st.doc)
   const [query, setQuery] = useState('')
+
+  const selectedNodes = useMemo(
+    () => selection.map((id) => findNode(doc, id)).filter((n): n is StudioNode => !!n),
+    [doc, selection]
+  )
 
   if (previewStyles === null) previewStyles = buildPreviewStyles()
 
@@ -103,12 +125,24 @@ export function PresetsPanel() {
     return PRESETS.filter((p) => p.label.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
   }, [query])
 
+  /*
+   * A stroke preset on a rectangle, or a shadow preset on a group, used to
+   * write keyframes nothing renders — it read as applied and nothing moved.
+   * Tiles that cannot affect the selection say so instead.
+   */
+  const usableFor = (preset: Preset) =>
+    selectedNodes.length === 0 || selectedNodes.some((n) => presetApplies(preset, n))
+
   const apply = (preset: Preset) => {
     if (selection.length === 0) {
       toast('Select an element first')
       return
     }
-    s.getState().applyPreset(preset)
+    const changed = s.getState().applyPreset(preset)
+    if (changed === 0) {
+      toast(`“${preset.label}” needs ${describeTargets(preset)}`)
+      return
+    }
     s.getState().restart()
     toast(`Applied “${preset.label}”`)
   }
@@ -147,8 +181,16 @@ export function PresetsPanel() {
                   <button
                     key={preset.id}
                     onClick={() => apply(preset)}
-                    className="group flex flex-col items-center gap-1 rounded-xl border border-edge/[0.07] bg-raised/50 p-2 transition-all duration-150 hover:border-accent/40 hover:bg-accent/[0.06] active:scale-95"
-                    title={`${preset.label} · ${preset.duration}ms`}
+                    className={`group flex flex-col items-center gap-1 rounded-xl border border-edge/[0.07] bg-raised/50 p-2 transition-all duration-150 active:scale-95 ${
+                      usableFor(preset)
+                        ? 'hover:border-accent/40 hover:bg-accent/[0.06]'
+                        : 'opacity-40 hover:border-edge/20'
+                    }`}
+                    title={
+                      usableFor(preset)
+                        ? `${preset.label} · ${preset.duration}ms`
+                        : `${preset.label} — needs ${describeTargets(preset)}`
+                    }
                   >
                     <div className="flex h-11 w-full items-center justify-center overflow-hidden rounded-lg bg-edge/[0.04]">
                       {isStrokePreset(preset) ? (
