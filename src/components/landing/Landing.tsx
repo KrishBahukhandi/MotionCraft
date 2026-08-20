@@ -372,43 +372,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* testimonials */}
-      <section className="mx-auto max-w-6xl px-5 py-24">
-        <FadeIn>
-          <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
-            Loved by people who ship
-          </h2>
-        </FadeIn>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
-            <FadeIn
-              key={t.name}
-              delay={i * 0.07}
-              className="rounded-2xl border border-edge/[0.08] bg-panel p-6 shadow-panel"
-            >
-              <figure>
-                <blockquote className="text-[14px] leading-relaxed text-ink/90">“{t.quote}”</blockquote>
-                <figcaption className="mt-4 flex items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white"
-                    style={{ background: t.color }}
-                  >
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-semibold">{t.name}</div>
-                    <div className="text-[11.5px] text-mute">{t.role}</div>
-                  </div>
-                </figcaption>
-              </figure>
-            </FadeIn>
-          ))}
-        </div>
-        <p className="mt-6 text-center text-[11px] text-mute/60">
-          Placeholder testimonials — MotionCraft is brand new.
-        </p>
-      </section>
-
       {/* FAQ */}
       <section id="faq" className="border-t border-edge/[0.07] bg-panel/40 py-24">
         <div className="mx-auto max-w-2xl px-5">
@@ -619,11 +582,6 @@ const COMPARISON: [string, boolean | string, boolean | string, boolean | string]
   ['Free, local, no account', true, true, 'Varies'],
 ]
 
-const TESTIMONIALS = [
-  { name: 'Ava', role: 'Design Engineer', color: '#8b7bff', quote: 'I stopped hand-tuning cubic-beziers in devtools. I drag the curve, copy the CSS, done.' },
-  { name: 'Marcus', role: 'Frontend Lead', color: '#22d3ee', quote: 'The exports are actually clean. Keyframes I would happily merge without a second look.' },
-  { name: 'Rin', role: 'Product Designer', color: '#f5b83d', quote: 'Finally a motion tool where handing off means pressing one button, not writing a spec.' },
-]
 
 const FAQ = [
   { q: 'Is it really free? What’s the catch?', a: 'Free, no account, no server. Everything runs and stays in your browser — your scenes autosave to localStorage. A future Pro tier may add cloud sharing and team features, but the editor stays free.' },
