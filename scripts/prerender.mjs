@@ -6,7 +6,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const templatePath = path.join(root, 'dist', 'index.html')
 const serverEntry = path.join(root, 'dist-ssr', 'entry-server.js')
 
-const { render, SEO_PAGES } = await import(pathToFileURL(serverEntry).href)
+const { render, SEO_PAGES, GALLERY, galleryEntryTitle, GALLERY_TITLE, GALLERY_DESCRIPTION } =
+  await import(pathToFileURL(serverEntry).href)
 
 const template = readFileSync(templatePath, 'utf-8')
 const marker = '<div id="root"></div>'
@@ -16,14 +17,19 @@ if (!template.includes(marker)) {
 
 function jsonLd(page) {
   const url = `https://motioncraft.bahukhandi-labs.com/${page.slug}`
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@graph': [
-      { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: page.title, description: page.description, inLanguage: 'en' },
-      { '@type': 'SoftwareApplication', name: 'MotionCraft', url: 'https://motioncraft.bahukhandi-labs.com/', applicationCategory: 'DesignApplication', operatingSystem: 'Any (web browser)', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
-      { '@type': 'FAQPage', '@id': `${url}#faq`, mainEntity: page.faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) },
-    ],
-  })
+  const graph = [
+    { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: page.title, description: page.description, inLanguage: 'en' },
+    { '@type': 'SoftwareApplication', name: 'MotionCraft', url: 'https://motioncraft.bahukhandi-labs.com/', applicationCategory: 'DesignApplication', operatingSystem: 'Any (web browser)', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+  ]
+  // only claim an FAQPage when there are actually questions on the page
+  if (page.faq && page.faq.length > 0) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      mainEntity: page.faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })),
+    })
+  }
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
 }
 
 function escapeAttr(value) {
@@ -139,10 +145,44 @@ for (const page of SEO_PAGES) {
   writeFileSync(path.join(root, 'dist', '404.html'), out)
 }
 
+/**
+ * Gallery pages: an index plus one page per animation. Each is a real scene
+ * rendered inline — the markup and its CSS are in the HTML, so the animation is
+ * part of the indexable content rather than hidden behind an iframe.
+ */
+function writePage(routePath, outDir, meta) {
+  const routeHtml = render(routePath)
+  const out = withPageMetadata(template.replace(marker, `<div id="root">${routeHtml}</div>`), meta)
+  const dir = path.join(root, 'dist', outDir)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(path.join(dir, 'index.html'), out)
+}
+
+writePage('/gallery', 'gallery', {
+  slug: 'gallery',
+  title: GALLERY_TITLE,
+  description: GALLERY_DESCRIPTION,
+  faq: [],
+})
+
+for (const item of GALLERY) {
+  writePage(`/gallery/${item.slug}`, path.join('gallery', item.slug), {
+    slug: `gallery/${item.slug}`,
+    title: galleryEntryTitle(item),
+    description: item.description,
+    faq: [],
+  })
+}
+
 const date = new Date().toISOString().slice(0, 10)
 const urls = [
   { loc: 'https://motioncraft.bahukhandi-labs.com/', priority: '1.0' },
   ...SEO_PAGES.map((page) => ({ loc: `https://motioncraft.bahukhandi-labs.com/${page.slug}`, priority: '0.8' })),
+  { loc: 'https://motioncraft.bahukhandi-labs.com/gallery', priority: '0.9' },
+  ...GALLERY.map((item) => ({
+    loc: `https://motioncraft.bahukhandi-labs.com/gallery/${item.slug}`,
+    priority: '0.7',
+  })),
 ]
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(({ loc, priority }) => `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>${priority}</priority>\n  </url>`).join('\n')}\n</urlset>\n`
 writeFileSync(path.join(root, 'dist', 'sitemap.xml'), sitemap)
@@ -153,4 +193,7 @@ if (existsSync(path.join(root, 'dist-ssr'))) {
 }
 
 const kb = (s) => `${(Buffer.byteLength(s) / 1024).toFixed(1)} kB`
-console.log(`prerendered ${urls.length} marketing pages (homepage HTML: ${kb(homepageHtml)})`)
+console.log(
+  `prerendered ${urls.length} pages — ${SEO_PAGES.length} landing, ${GALLERY.length} gallery ` +
+    `(homepage HTML: ${kb(homepageHtml)})`
+)

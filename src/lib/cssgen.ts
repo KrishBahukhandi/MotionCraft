@@ -64,12 +64,18 @@ interface Stop {
   decls: Record<string, string>
 }
 
-/** Distinct css class names for every node in a doc, de-duplicated. */
-export function classNames(doc: Doc): Map<string, string> {
+/**
+ * Distinct css class names for every node in a doc, de-duplicated.
+ *
+ * `prefix` namespaces both class and animation names, which is what lets many
+ * independent scenes share one page — a gallery index would otherwise have two
+ * `.spinner` rules and two `spinner-anim` keyframes fighting each other.
+ */
+export function classNames(doc: Doc, prefix = ''): Map<string, string> {
   const used = new Set<string>()
   const map = new Map<string, string>()
   for (const node of allNodes(doc)) {
-    const root = slugify(node.name)
+    const root = `${prefix}${slugify(node.name)}`
     let name = root
     let i = 2
     while (used.has(name)) name = `${root}-${i++}`
@@ -265,8 +271,12 @@ export function generateNodeCss(
 /** Back-compat name used by the presets thumbnail generator. */
 export const generateElementCss = generateNodeCss
 
-export function generateDocCss(doc: Doc, opts: CssGenOptions = DEFAULT_GEN_OPTIONS): NodeCss[] {
-  const names = classNames(doc)
+export function generateDocCss(
+  doc: Doc,
+  opts: CssGenOptions = DEFAULT_GEN_OPTIONS,
+  prefix = ''
+): NodeCss[] {
+  const names = classNames(doc, prefix)
   return allNodes(doc)
     .filter((node) => effectivelyVisible(doc, node))
     .map((node) => generateNodeCss(node, doc, names.get(node.id)!, opts))
@@ -282,8 +292,12 @@ function variablesBlock(doc: Doc, opts: CssGenOptions): string | null {
 }
 
 /** Plain stylesheet for the whole document. */
-export function docStylesheet(doc: Doc, opts: CssGenOptions = DEFAULT_GEN_OPTIONS): string {
-  const parts = generateDocCss(doc, opts)
+export function docStylesheet(
+  doc: Doc,
+  opts: CssGenOptions = DEFAULT_GEN_OPTIONS,
+  prefix = ''
+): string {
+  const parts = generateDocCss(doc, opts, prefix)
   const nl = opts.minify ? '' : '\n'
   const sp = opts.minify ? '' : ' '
   const ind = opts.minify ? '' : '  '
@@ -360,8 +374,8 @@ function elementMarkup(el: StudioElement, className: string, indent: string): st
  * Markup for the whole document. Groups nest to arbitrary depth, so their
  * transforms cascade to descendants exactly as they do on the canvas.
  */
-export function docMarkup(doc: Doc, indent = '  '): string {
-  const names = classNames(doc)
+export function docMarkup(doc: Doc, indent = '  ', prefix = ''): string {
+  const names = classNames(doc, prefix)
   const lines: string[] = []
 
   const emitGroup = (group: Group, pad: string, seen: Set<string>) => {
@@ -388,8 +402,8 @@ export function docMarkup(doc: Doc, indent = '  '): string {
  * entirely in each node's `transform`, so these rules only pin every node to the
  * stage origin — the generated transform does the placing.
  */
-export function layoutStylesheet(doc: Doc): string {
-  const names = classNames(doc)
+export function layoutStylesheet(doc: Doc, prefix = ''): string {
+  const names = classNames(doc, prefix)
   const rules: string[] = []
   for (const node of allNodes(doc)) {
     const cls = names.get(node.id)!
