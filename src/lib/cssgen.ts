@@ -28,6 +28,16 @@ export interface CssGenOptions {
   loop: boolean
   reducedMotion: boolean
   minify: boolean
+  /**
+   * Emit only the motion — keyframes, animation, transition and state rules —
+   * and none of the static appearance or placement.
+   *
+   * The scene's own layout is absolute pixels measured on an artboard, which is
+   * exactly what nobody can paste into a real project. This gives you the part
+   * that is genuinely portable, to apply to markup you already have. Keyframed
+   * x/y become offsets from wherever your element already sits.
+   */
+  motionOnly?: boolean
 }
 
 export const DEFAULT_GEN_OPTIONS: CssGenOptions = {
@@ -267,7 +277,9 @@ export function generateNodeCss(
       : undefined
     : doc.groups.find((g) => g.id === node.groupId)
   const inFlow = !!parent?.layout
-  const origin = inFlow ? node.base : null
+  // motion-only means every node's transforms are relative to where it rests,
+  // because the caller is applying them to an element we did not place
+  const origin = inFlow || opts.motionOnly ? node.base : null
 
   let baseDecls = cssDecls(relativeTo(node.base, origin), null)
 
@@ -335,6 +347,11 @@ export function generateNodeCss(
     const scrolled = (node.timeline?.driver ?? 'time') !== 'time'
     const count = opts.loop && !scrolled ? 'infinite' : '1'
     animation = `${animationName} ${fmt(doc.duration)}ms linear 0ms ${count} both`
+  }
+
+  if (opts.motionOnly) {
+    // keep nothing static: the element already looks how the caller wants
+    baseDecls = {}
   }
 
   const { states, changedCssProps } = buildStates(node)

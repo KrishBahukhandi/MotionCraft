@@ -14,12 +14,13 @@ export function CodePanel() {
   const [loop, setLoop] = useState(true)
   const [minify, setMinify] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(true)
+  const [motionOnly, setMotionOnly] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const format = getFormat(formatId)
   const code = useMemo(
-    () => format.generate(doc, { loop, minify, reducedMotion }),
-    [doc, format, loop, minify, reducedMotion]
+    () => format.generate(doc, { loop, minify, reducedMotion, motionOnly }),
+    [doc, format, loop, minify, reducedMotion, motionOnly]
   )
 
   const onCopy = async () => {
@@ -64,6 +65,13 @@ export function CodePanel() {
         <label className="flex cursor-pointer items-center gap-1.5">
           <input type="checkbox" checked={minify} onChange={(e) => setMinify(e.target.checked)} className="accent-[rgb(var(--mc-accent))]" />
           Minify
+        </label>
+        <label
+          className="flex cursor-pointer items-center gap-1.5"
+          title="Just the keyframes and transitions, to apply to markup you already have"
+        >
+          <input type="checkbox" checked={motionOnly} onChange={(e) => setMotionOnly(e.target.checked)} className="accent-[rgb(var(--mc-accent))]" />
+          Motion only
         </label>
       </div>
 

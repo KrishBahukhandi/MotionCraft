@@ -69,6 +69,8 @@ function nestedScrollBlock(part: NodeCss, pad = '  '): string {
 
 /** Full stylesheet including the positioning rules exported markup needs. */
 function fullStylesheet(doc: Doc, opts: CssGenOptions): string {
+  // motion-only output has no markup of its own, so it needs no layout rules
+  if (opts.motionOnly) return docStylesheet(doc, opts)
   return `${layoutStylesheet(doc)}\n\n${docStylesheet(doc, opts)}`
 }
 

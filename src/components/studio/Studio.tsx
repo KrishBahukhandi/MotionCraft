@@ -7,6 +7,7 @@ import {
   Loader2,
   CreditCard,
   Image,
+  FolderOpen,
   Layers,
   LayoutTemplate,
   Monitor,
@@ -40,6 +41,7 @@ import { PresetsPanel } from './PresetsPanel'
 import { LayersPanel } from './LayersPanel'
 import { ComponentsPanel } from './ComponentsPanel'
 import { TemplatesPanel } from './TemplatesPanel'
+import { ScenesDialog } from './ScenesDialog'
 import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
 import { ImportDialog } from './ImportDialog'
@@ -69,6 +71,7 @@ export function Studio() {
   usePlayback()
   useHotkeys()
   const { isDark, cycle, theme } = useTheme()
+  const [scenesOpen, setScenesOpen] = useState(false)
 
   const s = useStudio
   const docName = useStudio((st) => st.doc.name)
@@ -180,6 +183,9 @@ export function Studio() {
           <IconButton title={`Theme: ${theme}`} onClick={cycle}>
             {isDark ? <Moon size={15} /> : <Sun size={15} />}
           </IconButton>
+          <IconButton title="Saved scenes" onClick={() => setScenesOpen(true)}>
+            <FolderOpen size={15} />
+          </IconButton>
           <IconButton title="Share link" onClick={() => s.getState().setShareOpen(true)}>
             <Link2 size={15} />
           </IconButton>
@@ -266,6 +272,7 @@ export function Studio() {
       <CommandPalette />
       <ImportDialog />
       <ShareDialog />
+      {scenesOpen && <ScenesDialog onClose={() => setScenesOpen(false)} />}
     </div>
     </div>
   )

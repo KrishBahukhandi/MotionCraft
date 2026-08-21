@@ -1,5 +1,7 @@
 import { Diamond, Folder, Link2, Plus, Trash2, Unlink } from 'lucide-react'
+import { useState } from 'react'
 import { useStudio } from '@/store/studio'
+import { describeImageWeight, readImageFile } from '@/lib/imagefile'
 import {
   currentValue,
   getTrack,
@@ -98,6 +100,8 @@ export function Inspector() {
         </>
       )}
 
+      {!group && el!.type === 'image' && <ImageSection el={el!} />}
+
       {!group && (el!.type === 'text' || el!.type === 'button' || el!.type === 'card') && (
         <>
           <Section title="Content">
@@ -135,6 +139,85 @@ export function Inspector() {
       <TimelineSection node={node} />
       <StatesSection node={node} />
     </div>
+  )
+}
+
+/**
+ * The picture an image element shows.
+ *
+ * There was no way to set this at all — the Content field only ever appeared
+ * for text, button and card — so an image element was stuck on its placeholder
+ * forever. A URL works, and so does a local file: it is downscaled and stored
+ * in the document as a data URI, which keeps the "nothing leaves your machine"
+ * promise intact and is why the size is worth showing.
+ */
+function ImageSection({ el }: { el: StudioElement }) {
+  const s = useStudio
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<{ level: 'ok' | 'heavy'; detail: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const src = String(el.base.src ?? '')
+  const isEmbedded = src.startsWith('data:')
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await readImageFile(file)
+      s.getState().pushHistory()
+      s.getState().setBaseProp(el.id, 'src', result.src)
+      // match the box to the picture rather than stretching it
+      const ratio = result.height / result.width
+      const w = Number(el.base.width ?? 200)
+      s.getState().setBaseProp(el.id, 'height', Math.round(w * ratio))
+      setNote(describeImageWeight(result.bytes))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not read that image.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section title="Image" defaultOpen>
+      <div className="flex flex-col gap-2">
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-edge/15 bg-raised/60 px-3 py-2 text-[12px] font-medium transition-colors hover:bg-edge/[0.06]">
+          {busy ? 'Reading…' : 'Choose a file'}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              void pick(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+        </label>
+
+        <input
+          className="mc-input"
+          value={isEmbedded ? '' : src}
+          placeholder={isEmbedded ? 'Embedded in the scene' : '…or paste an image URL'}
+          onFocus={() => s.getState().pushHistory()}
+          onChange={(e) => s.getState().setBaseProp(el.id, 'src', e.target.value)}
+        />
+
+        {error && <p className="text-[11px] leading-snug text-red-400">{error}</p>}
+        {note && (
+          <p
+            className={`text-[11px] leading-snug ${note.level === 'heavy' ? 'text-amber-500' : 'text-mute'}`}
+          >
+            {note.detail}
+          </p>
+        )}
+        {!note && isEmbedded && (
+          <p className="text-[11px] leading-snug text-mute">
+            Stored in the scene itself — nothing is uploaded, and it travels in a share link.
+          </p>
+        )}
+      </div>
+    </Section>
   )
 }
 

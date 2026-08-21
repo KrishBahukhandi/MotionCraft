@@ -50,6 +50,18 @@ properties. The import is lossy by nature, so it says so: matrix transforms, gra
 multiple shadows, unsupported filters and missing keyframes are each reported with a reason
 rather than dropped quietly.
 
+**Motion only** — an export mode that emits just the keyframes, transitions and state
+rules, with transforms as offsets from rest rather than artboard coordinates. The full
+export places elements absolutely, which is not something you can paste into an existing
+layout; this is the portable half, to apply to markup you already have.
+
+**Saved scenes** — a named library in `localStorage`, separate from the autosave. The
+working document has always saved itself, but there was only one of it, so opening a
+template left your previous work one undo away and gone on refresh.
+
+**Images** — pick a local file and it is downscaled and stored in the scene as a data URI,
+so it travels in a share link and never leaves the machine. A URL works too.
+
 **12 export formats** — CSS, SCSS, Tailwind v4 (`@theme`) and v3 (config), React, Vue,
 Svelte, Angular, styled-components, Emotion, Web Components, standalone HTML. Interaction
 states are carried into every one; for Tailwind they become variant utilities
