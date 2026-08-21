@@ -9,7 +9,7 @@
  * code people copied, which is the failure mode worth automating away.
  *
  * Covers all three sources: the 58 motion presets, the 17 component presets,
- * and the 28 gallery scenes assembled from them.
+ * and every gallery scene assembled from them.
  *
  *   npm run audit
  */
@@ -177,6 +177,46 @@ function auditDoc(id, scope, doc) {
 }
 
 for (const entry of GALLERY) auditDoc(entry.slug, 'gallery', entry.build())
+
+// ------------------------------------------------------- gallery page prose
+//
+// Scale is exactly when a directory turns into doorway pages. Two entries that
+// animate different things but say the same thing are one page as far as a
+// search engine is concerned, so the writing gets checked like the data does.
+{
+  const seen = { slug: new Map(), title: new Map(), description: new Map(), note: new Map() }
+  for (const e of GALLERY) {
+    for (const field of Object.keys(seen)) {
+      const key = String(e[field]).trim().toLowerCase()
+      if (seen[field].has(key)) {
+        add(e.slug, `duplicate-${field}`, `same ${field} as "${seen[field].get(key)}"`, 'prose')
+      } else {
+        seen[field].set(key, e.slug)
+      }
+    }
+    if (String(e.note).trim().length < 90) {
+      add(e.slug, 'thin-note', `note is ${String(e.note).trim().length} chars`, 'prose')
+    }
+    if (e.tags.length < 2) add(e.slug, 'thin-tags', `${e.tags.length} tag(s)`, 'prose')
+  }
+
+  // near-duplicates: different words, same page
+  const words = (t) => new Set(String(t).toLowerCase().match(/[a-z]{4,}/g) ?? [])
+  const overlap = (a, b) => {
+    const inter = [...a].filter((w) => b.has(w)).length
+    const union = new Set([...a, ...b]).size
+    return union === 0 ? 0 : inter / union
+  }
+  const profiles = GALLERY.map((e) => ({ slug: e.slug, w: words(`${e.description} ${e.note}`) }))
+  for (let i = 0; i < profiles.length; i++) {
+    for (let j = i + 1; j < profiles.length; j++) {
+      const score = overlap(profiles[i].w, profiles[j].w)
+      if (score > 0.62) {
+        add(profiles[i].slug, 'near-duplicate-prose', `${Math.round(score * 100)}% shared with "${profiles[j].slug}"`, 'prose')
+      }
+    }
+  }
+}
 
 // ------------------------------------------------------------ motion presets
 //

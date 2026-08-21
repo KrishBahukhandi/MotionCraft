@@ -38,7 +38,19 @@ export function GalleryPreview({
   return (
     <div
       className={`relative overflow-hidden rounded-xl bg-[#101116] ${className}`}
-      style={{ width: width * scale, height: height * scale }}
+      style={{
+        width: width * scale,
+        height: height * scale,
+        /*
+         * The gallery index carries seventy-odd of these, every one looping
+         * forever. content-visibility skips rendering the ones off-screen, and
+         * a skipped subtree does not animate — so scrolling costs what is
+         * visible rather than what exists. The intrinsic size keeps the
+         * scrollbar honest while they are skipped.
+         */
+        contentVisibility: 'auto',
+        containIntrinsicSize: `${width * scale}px ${height * scale}px`,
+      }}
     >
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div

@@ -77,7 +77,9 @@ accordions, navbars, modals, dropdowns, tooltips, toasts, skeletons, spinners an
 reveals, inserted with their motion wired. Multi-part presets come grouped, and the navbar
 animates as a group so the whole bar moves as one.
 
-**58 motion presets** across entrances, exits, attention, reveals, path and effects.
+**58 motion presets** across entrances, exits, attention, reveals, path and effects. Nearly all
+of them have a gallery page: 73 animations, each with its own URL, live preview,
+generated code and a note on why it is built that way.
 Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
 on a group — are shown unavailable rather than applied to no effect.
 
@@ -150,8 +152,9 @@ still look right in the editor: a property animated on an element type that
 ignores it, a track that holds one value, an easing id that silently degrades to
 linear, a value dropped from the export because it matched a registry default
 that CSS does not share. `scripts/audit-scenes.mjs` walks all 58 motion presets,
-17 component presets and 28 gallery scenes, and exits non-zero so it can gate a
-release.
+17 component presets and every gallery scene, and exits non-zero so it can gate
+a release. It checks the writing too — duplicate or near-duplicate copy across
+entries is how a directory turns into doorway pages.
 
 ## Architecture
 
