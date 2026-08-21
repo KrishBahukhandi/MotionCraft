@@ -36,10 +36,10 @@ export function GalleryIndex() {
             <span className="text-[14px] font-bold">MotionCraft</span>
           </Link>
           <Link
-            to="/"
+            to="/templates"
             className="ml-auto text-[13px] font-medium text-mute transition-colors hover:text-ink"
           >
-            Home
+            Templates
           </Link>
           <Link
             to="/studio"
@@ -108,6 +108,21 @@ export function GalleryIndex() {
         )}
 
         <div className="mt-20 rounded-2xl border border-edge/10 bg-panel p-8 text-center">
+          <h2 className="text-2xl font-bold">Want a whole scene, not one animation?</h2>
+          <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-mute">
+            The templates are laid-out screens — heroes, pricing tables, forms — with every part
+            already choreographed.
+          </p>
+          <Link
+            to="/templates"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:brightness-110"
+          >
+            Browse templates
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-edge/10 bg-panel p-8 text-center">
           <h2 className="text-2xl font-bold">Need something that isn’t here?</h2>
           <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-mute">
             Build it on a canvas and timeline, or paste animation CSS you already have and edit it

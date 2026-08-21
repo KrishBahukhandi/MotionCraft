@@ -4,6 +4,8 @@ import { Landing } from '@/components/landing/Landing'
 import { SeoLandingPage } from '@/components/landing/SeoLandingPage'
 import { GalleryIndex } from '@/components/gallery/GalleryIndex'
 import { GalleryEntryPage } from '@/components/gallery/GalleryEntryPage'
+import { TemplateIndex } from '@/components/templates/TemplateIndex'
+import { TemplateEntryPage } from '@/components/templates/TemplateEntryPage'
 
 const Studio = lazy(() =>
   import('@/components/studio/Studio').then((m) => ({ default: m.Studio }))
@@ -28,6 +30,8 @@ export function AppRoutes() {
           gallery routes are safe alongside the SEO slug catch-all */}
       <Route path="/gallery" element={<GalleryIndex />} />
       <Route path="/gallery/:slug" element={<GalleryEntryPage />} />
+      <Route path="/templates" element={<TemplateIndex />} />
+      <Route path="/templates/:slug" element={<TemplateEntryPage />} />
       <Route path="/:slug" element={<SeoLandingPage />} />
       <Route
         path="/studio"

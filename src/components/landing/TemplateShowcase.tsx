@@ -23,7 +23,7 @@ function TemplateCard({ template }: { template: Template }) {
     return {
       css: `${layoutStylesheet(doc, prefix)}\n${docStylesheet(
         doc,
-        { loop: true, reducedMotion: true, minify: false },
+        { loop: false, reducedMotion: true, minify: false },
         prefix
       )}`,
       markup: docMarkup(doc, '  ', prefix),

@@ -23,7 +23,7 @@ npm install
 npm run dev
 ```
 
-Routes: `/` landing page · `/studio` the editor.
+Routes: `/` landing · `/templates` whole scenes · `/gallery` single animations · `/studio` the editor.
 
 ## Deploy
 
@@ -136,7 +136,7 @@ node scripts/prerender.mjs        # render each route into dist/
 client-only app, and handing it the prerendered homepage made React discard the markup and
 re-render, flashing the wrong page. Also in place: per-route canonical URLs, Open Graph and
 Twitter cards, a generated `sitemap.xml`, `robots.txt`, and JSON-LD for `WebSite`,
-`SoftwareApplication` and `FAQPage`. Above-the-fold content renders visible rather than
+`SoftwareApplication`, `BreadcrumbList` and `FAQPage`. Above-the-fold content renders visible rather than
 fading in, so it is not excluded from LCP.
 
 The hero is the editor rather than a picture of one: it renders a gallery scene through the

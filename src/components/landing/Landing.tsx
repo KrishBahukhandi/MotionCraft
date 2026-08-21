@@ -139,7 +139,8 @@ export function Landing() {
             <span className="text-[15px] font-bold tracking-tight">MotionCraft</span>
           </div>
           <div className="ml-auto hidden items-center gap-6 text-[13.5px] font-medium text-mute md:flex">
-            <Link to="/gallery" className="transition-colors hover:text-ink">Gallery</Link>
+            <Link to="/templates" className="transition-colors hover:text-ink">Templates</Link>
+          <Link to="/gallery" className="transition-colors hover:text-ink">Gallery</Link>
           <a href="#features" className="transition-colors hover:text-ink">Features</a>
             <a href="#code" className="transition-colors hover:text-ink">Code</a>
             <a href="#compare" className="transition-colors hover:text-ink">Compare</a>
@@ -326,10 +327,10 @@ export function Landing() {
         </FadeIn>
         <FadeIn className="mt-8">
           <Link
-            to="/studio"
+            to="/templates"
             className="inline-flex items-center gap-2 text-[15px] font-semibold text-accent hover:underline"
           >
-            All {TEMPLATES.length} scenes are in the editor
+            Browse all {TEMPLATES.length} scenes
             <ArrowRight size={16} />
           </Link>
         </FadeIn>
@@ -545,6 +546,7 @@ export function Landing() {
             <span>· The CSS Animation Studio</span>
           </div>
           <div className="flex items-center gap-5">
+            <Link to="/templates" className="transition-colors hover:text-ink">Templates</Link>
             <Link to="/gallery" className="transition-colors hover:text-ink">Gallery</Link>
             <a href="#features" className="transition-colors hover:text-ink">Features</a>
             <a href="#faq" className="transition-colors hover:text-ink">FAQ</a>

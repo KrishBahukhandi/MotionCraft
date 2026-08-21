@@ -6,8 +6,18 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const templatePath = path.join(root, 'dist', 'index.html')
 const serverEntry = path.join(root, 'dist-ssr', 'entry-server.js')
 
-const { render, SEO_PAGES, GALLERY, galleryEntryTitle, GALLERY_TITLE, GALLERY_DESCRIPTION } =
-  await import(pathToFileURL(serverEntry).href)
+const {
+  render,
+  SEO_PAGES,
+  GALLERY,
+  galleryEntryTitle,
+  GALLERY_TITLE,
+  GALLERY_DESCRIPTION,
+  TEMPLATES,
+  templateTitle,
+  TEMPLATES_TITLE,
+  TEMPLATES_DESCRIPTION,
+} = await import(pathToFileURL(serverEntry).href)
 
 const template = readFileSync(templatePath, 'utf-8')
 const marker = '<div id="root"></div>'
@@ -21,6 +31,24 @@ function jsonLd(page) {
     { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: page.title, description: page.description, inLanguage: 'en' },
     { '@type': 'SoftwareApplication', name: 'MotionCraft', url: 'https://motioncraft.bahukhandi-labs.com/', applicationCategory: 'DesignApplication', operatingSystem: 'Any (web browser)', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
   ]
+  /*
+   * Breadcrumbs. Ninety-odd pages hang off two directories, and without this a
+   * crawler has to infer the hierarchy from links alone. Derived from the slug
+   * so it cannot disagree with where the page actually lives.
+   */
+  if (page.crumbs && page.crumbs.length > 1) {
+    graph.push({
+      '@type': 'BreadcrumbList',
+      '@id': `${url}#breadcrumb`,
+      itemListElement: page.crumbs.map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.name,
+        ...(c.path === undefined ? {} : { item: `https://motioncraft.bahukhandi-labs.com${c.path}` }),
+      })),
+    })
+  }
+
   // only claim an FAQPage when there are actually questions on the page
   if (page.faq && page.faq.length > 0) {
     graph.push({
@@ -101,6 +129,7 @@ const homepage = template.replace(marker, `<div id="root">${homepageHtml}</div>`
 writeFileSync(templatePath, homepage)
 
 for (const page of SEO_PAGES) {
+  page.crumbs = [{ name: 'Home', path: '/' }, { name: page.h1 ?? page.title }]
   const routeHtml = render(`/${page.slug}`)
   const out = withPageMetadata(template.replace(marker, `<div id="root">${routeHtml}</div>`), page)
   const routeDir = path.join(root, 'dist', page.slug)
@@ -198,6 +227,7 @@ writePage('/gallery', 'gallery', {
   title: GALLERY_TITLE,
   description: GALLERY_DESCRIPTION,
   faq: [],
+  crumbs: [{ name: 'Home', path: '/' }, { name: 'Gallery' }],
 })
 
 for (const item of GALLERY) {
@@ -206,6 +236,37 @@ for (const item of GALLERY) {
     title: galleryEntryTitle(item),
     description: item.description,
     faq: [],
+    crumbs: [
+      { name: 'Home', path: '/' },
+      { name: 'Gallery', path: '/gallery' },
+      { name: item.title },
+    ],
+  })
+}
+
+/**
+ * Templates: whole scenes rather than single animations, so they get their own
+ * directory rather than being mixed into the gallery.
+ */
+writePage('/templates', 'templates', {
+  slug: 'templates',
+  title: TEMPLATES_TITLE,
+  description: TEMPLATES_DESCRIPTION,
+  faq: [],
+  crumbs: [{ name: 'Home', path: '/' }, { name: 'Templates' }],
+})
+
+for (const t of TEMPLATES) {
+  writePage(`/templates/${t.slug}`, path.join('templates', t.slug), {
+    slug: `templates/${t.slug}`,
+    title: templateTitle(t),
+    description: t.description,
+    faq: [],
+    crumbs: [
+      { name: 'Home', path: '/' },
+      { name: 'Templates', path: '/templates' },
+      { name: t.name },
+    ],
   })
 }
 
@@ -213,6 +274,11 @@ const date = new Date().toISOString().slice(0, 10)
 const urls = [
   { loc: 'https://motioncraft.bahukhandi-labs.com/', priority: '1.0' },
   ...SEO_PAGES.map((page) => ({ loc: `https://motioncraft.bahukhandi-labs.com/${page.slug}`, priority: '0.8' })),
+  { loc: 'https://motioncraft.bahukhandi-labs.com/templates', priority: '0.9' },
+  ...TEMPLATES.map((t) => ({
+    loc: `https://motioncraft.bahukhandi-labs.com/templates/${t.slug}`,
+    priority: '0.8',
+  })),
   { loc: 'https://motioncraft.bahukhandi-labs.com/gallery', priority: '0.9' },
   ...GALLERY.map((item) => ({
     loc: `https://motioncraft.bahukhandi-labs.com/gallery/${item.slug}`,
@@ -229,6 +295,7 @@ if (existsSync(path.join(root, 'dist-ssr'))) {
 
 const kb = (s) => `${(Buffer.byteLength(s) / 1024).toFixed(1)} kB`
 console.log(
-  `prerendered ${urls.length} pages — ${SEO_PAGES.length} landing, ${GALLERY.length} gallery ` +
+  `prerendered ${urls.length} pages — ${SEO_PAGES.length} landing, ${TEMPLATES.length} template, ` +
+    `${GALLERY.length} gallery ` +
     `(homepage HTML: ${kb(homepageHtml)})`
 )
