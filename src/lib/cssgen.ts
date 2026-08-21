@@ -15,6 +15,7 @@ import { cssDecls, triggerSelector } from './properties'
 import {
   allNodes,
   childGroups,
+  flowChildren,
   effectivelyVisible,
   elementsOfGroup,
   groupBBox,
@@ -483,9 +484,18 @@ export function docMarkup(doc: Doc, indent = '  ', prefix = ''): string {
     if (seen.has(group.id) || !group.visible) return
     seen.add(group.id)
     lines.push(`${pad}<div class="${names.get(group.id)}">`)
-    for (const child of childGroups(doc, group.id)) emitGroup(child, `${pad}  `, seen)
-    for (const el of elementsOfGroup(doc, group.id)) {
-      if (el.visible) lines.push(elementMarkup(el, names.get(el.id)!, `${pad}  `))
+    /*
+     * Flow order, not groups-then-elements.
+     *
+     * With absolute positioning the source order never mattered — every node
+     * carried its own coordinates. Inside a flex container the DOM order *is*
+     * the visual order, so emitting sub-groups first would put the buttons
+     * above the headline in the export while the canvas showed them below.
+     */
+    for (const child of flowChildren(doc, group.id)) {
+      if (!child.visible) continue
+      if (isGroup(child)) emitGroup(child, `${pad}  `, seen)
+      else lines.push(elementMarkup(child, names.get(child.id)!, `${pad}  `))
     }
     lines.push(`${pad}</div>`)
   }

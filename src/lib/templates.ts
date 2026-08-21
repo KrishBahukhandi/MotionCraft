@@ -209,38 +209,44 @@ function scene(
 
 /** Marketing hero: eyebrow, headline, subhead, actions, floating panel. */
 function heroLaunch(): Doc {
-  const eyebrow = node('rect', 'Eyebrow', {
-    x: 64, y: 96, width: 168, height: 30, backgroundColor: C.surfaceLift, borderRadius: R.pill,
-  })
-  const eyebrowText = text('Eyebrow Label', 'Now in beta', {
-    x: 84, y: 102, width: 140, fontSize: 13, color: C.accentSoft, fontWeight: 600,
-  })
-  const line1 = text('Headline A', 'Ship motion', { x: 64, y: 148, width: 460, height: 52, fontSize: 46, fontWeight: 800 })
-  const line2 = text('Headline B', 'that feels right.', { x: 64, y: 202, width: 460, height: 52, fontSize: 46, fontWeight: 800, color: C.accentSoft })
-  const sub = text('Subhead', 'Design it, tune it, export the CSS.', { x: 64, y: 270, width: 420, fontSize: 17, color: C.mute })
-  const cta = lift(button('Primary CTA', 'Get started', { x: 64, y: 318 }), -3, C.accentSoft)
-  const ghost = lift(button('Secondary CTA', 'See how', {
-    x: 208, y: 318, backgroundColor: C.surfaceLift, color: C.ink,
-  }), -3, C.line)
+  const eyebrowText = text('Eyebrow Label', 'Now in beta', { width: 168, height: 30, fontSize: 13, color: C.accentSoft, fontWeight: 600 })
+  const eyebrow = container('Eyebrow', { direction: 'row', gap: 0, padding: 8, align: 'center', justify: 'center' }, [eyebrowText])
+  eyebrow.base.backgroundColor = C.surfaceLift
+  eyebrow.base.borderRadius = R.pill
 
-  const panel = box('Panel', { x: 566, y: 120, width: 330, height: 240, backgroundColor: C.surface, borderRadius: R.card })
-  const panelBar = box('Panel Bar', { x: 590, y: 148, width: 120, height: 12, backgroundColor: C.accent, borderRadius: R.pill })
-  const panelL1 = box('Panel Line 1', { x: 590, y: 180, width: 282, height: 10, backgroundColor: C.line, borderRadius: R.pill })
-  const panelL2 = box('Panel Line 2', { x: 590, y: 202, width: 240, height: 10, backgroundColor: C.line, borderRadius: R.pill })
-  const chip = box('Panel Chip', { x: 590, y: 240, width: 96, height: 34, backgroundColor: C.surfaceLift, borderRadius: R.chip })
-  const chip2 = box('Panel Chip 2', { x: 698, y: 240, width: 96, height: 34, backgroundColor: C.surfaceLift, borderRadius: R.chip })
-  const glow = node('rect', 'Accent Dot', {
-    x: 856, y: 96, width: 56, height: 56, backgroundColor: C.cyan, borderRadius: R.pill, opacity: 0.9,
-  })
+  const line1 = text('Headline A', 'Ship motion', { width: 420, height: 52, fontSize: 44, fontWeight: 800 })
+  const line2 = text('Headline B', 'that feels right.', { width: 420, height: 52, fontSize: 44, fontWeight: 800, color: C.accentSoft })
+  const sub = text('Subhead', 'Design it, tune it, export the CSS.', { width: 420, height: 24, fontSize: 17, color: C.mute })
+  const cta = lift(button('Primary CTA', 'Get started', {}), -3, C.accentSoft)
+  const ghost = lift(button('Secondary CTA', 'See how', { backgroundColor: C.surfaceLift, color: C.ink }), -3, C.line)
+  const actions = container('Actions', { direction: 'row', gap: 12, padding: 0, align: 'center' }, [cta, ghost])
 
-  const copy = [eyebrow, eyebrowText, line1, line2, sub, cta, ghost]
-  const end1 = stagger(copy, 'fade-in-up', 80, 0)
-  const panelBits = [panel, panelBar, panelL1, panelL2, chip, chip2]
-  const end2 = stagger(panelBits, 'fade-in-right', 60, 220)
-  const end3 = stagger([glow], 'pop-in', 0, 640)
+  const copy = container('Hero Copy', { direction: 'column', gap: 18, padding: 0, align: 'start' }, [eyebrow, line1, line2, sub, actions])
+  copy.widthMode = 'fill'
 
-  const g = grouped('Hero', [...copy, ...panelBits, glow])
-  return scene('Hero — Launch', 960, 480, Math.max(end1, end2, end3), [...copy, ...panelBits, glow], [g])
+  const panelBar = box('Panel Bar', { width: 120, height: 12, backgroundColor: C.accent, borderRadius: R.pill })
+  const panelL1 = box('Panel Line 1', { width: 240, height: 10, backgroundColor: C.line, borderRadius: R.pill })
+  const panelL2 = box('Panel Line 2', { width: 200, height: 10, backgroundColor: C.line, borderRadius: R.pill })
+  panelL1.widthMode = 'hug'
+  const chip = box('Panel Chip', { width: 96, height: 34, backgroundColor: C.surfaceLift, borderRadius: R.chip })
+  const chip2 = box('Panel Chip 2', { width: 96, height: 34, backgroundColor: C.surfaceLift, borderRadius: R.chip })
+  const chips = container('Panel Chips', { direction: 'row', gap: 12, padding: 0, align: 'center' }, [chip, chip2])
+  const panel = container('Panel', { direction: 'column', gap: 16, padding: 26, align: 'start' }, [panelBar, panelL1, panelL2, chips])
+  panel.base.backgroundColor = C.surface
+  panel.base.borderRadius = R.card
+  panel.widthMode = 'fill'
+
+  const root = container('Hero', { direction: 'row', gap: 48, padding: 56, align: 'center' }, [copy, panel])
+
+  const copyEls = [eyebrowText, line1, line2, sub, cta, ghost]
+  const panelEls = [panelBar, panelL1, panelL2, chip, chip2]
+  const a = stagger(copyEls, 'fade-in-up', 80, 0)
+  const b = stagger(panelEls, 'fade-in-right', 60, 220)
+
+  const doc = scene('Hero — Launch', 960, 480, Math.max(a, b), [...copyEls, ...panelEls],
+    [root, copy, eyebrow, actions, panel, chips])
+  relayout(doc)
+  return doc
 }
 
 /**
@@ -406,130 +412,221 @@ function statsRow(): Doc {
   return doc
 }
 
-/** Notifications arriving one after another. */
+/** Three notifications sliding in from the right, one after another. */
 function toastStack(): Doc {
-  const els: StudioElement[] = []
+  const all: StudioElement[] = []
+  const cards: Group[] = []
   const rows = [
     { t: 'Export ready', c: C.accent },
     { t: 'Scene saved', c: C.cyan },
     { t: 'Link copied', c: C.accentSoft },
   ]
   rows.forEach((r, i) => {
-    const y = 120 + i * 92
-    const card = box(`Toast ${i + 1}`, { x: 520, y, width: 372, height: 72, backgroundColor: C.surfaceLift, borderRadius: R.card, shadowY: 10, shadowBlur: 30, shadowColor: '#00000066' })
-    const dot = box(`Toast ${i + 1} Dot`, { x: 544, y: y + 24, width: 24, height: 24, backgroundColor: r.c, borderRadius: R.pill })
-    const label = text(`Toast ${i + 1} Text`, r.t, { x: 584, y: y + 22, width: 260, fontSize: 15, fontWeight: 600 })
-    const sub = text(`Toast ${i + 1} Sub`, 'a moment ago', { x: 584, y: y + 44, width: 260, fontSize: 12, color: C.faint })
-    els.push(card, dot, label, sub)
+    const dot = box(`Toast ${i + 1} Dot`, { width: 24, height: 24, backgroundColor: r.c, borderRadius: R.pill })
+    const label = text(`Toast ${i + 1} Text`, r.t, { width: 240, height: 20, fontSize: 15, fontWeight: 600 })
+    const sub = text(`Toast ${i + 1} Sub`, 'a moment ago', { width: 240, height: 16, fontSize: 12, color: C.faint })
+    label.widthMode = 'fill'
+    sub.widthMode = 'fill'
+    const copy = container(`Toast ${i + 1} Copy`, { direction: 'column', gap: 4, padding: 0, align: 'start' }, [label, sub])
+    copy.widthMode = 'fill'
+    const card = container(`Toast ${i + 1}`, { direction: 'row', gap: 16, padding: 20, align: 'center' }, [dot, copy])
+    card.base.backgroundColor = C.surfaceLift
+    card.base.borderRadius = R.card
+    card.base.shadowY = 10
+    card.base.shadowBlur = 30
+    card.base.shadowColor = '#00000066'
+    card.widthMode = 'fill'
+    all.push(dot, label, sub)
+    cards.push(card, copy)
   })
-  const end = stagger(els, 'slide-in-right', 30, 0)
-  const g = grouped('Toasts', els)
-  return scene('Feedback — Toast Stack', 960, 480, end, els, [g])
+  const stack = container('Toasts', { direction: 'column', gap: 16, padding: 48, align: 'stretch', justify: 'center' },
+    cards.filter((c) => !c.name.includes('Copy')))
+  const end = stagger(all, 'slide-in-right', 30, 0)
+  const doc = scene('Feedback — Toast Stack', 960, 480, end, all, [stack, ...cards])
+  relayout(doc)
+  return doc
 }
 
-/** A sign-in card whose fields answer to focus. */
+/** A sign-in card that assembles downward, with fields that answer to focus. */
 function loginForm(): Doc {
-  const card = box('Form Card', { x: 300, y: 76, width: 360, height: 330, backgroundColor: C.surface, borderRadius: R.card, shadowY: 16, shadowBlur: 44, shadowColor: '#00000066' })
-  const title = text('Form Title', 'Welcome back', { x: 336, y: 116, width: 300, height: 32, fontSize: 24, fontWeight: 700 })
-  const sub = text('Form Sub', 'Sign in to continue', { x: 336, y: 152, width: 300, fontSize: 14, color: C.mute })
-  const mk = (name: string, y: number) => {
-    const field = box(name, { x: 336, y, width: 288, height: 46, backgroundColor: C.surfaceLift, borderRadius: R.chip })
-    field.states = [{
+  const title = text('Form Title', 'Welcome back', { width: 288, height: 32, fontSize: 24, fontWeight: 700 })
+  const sub = text('Form Sub', 'Sign in to continue', { width: 288, height: 20, fontSize: 14, color: C.mute })
+  const field = (name: string) => {
+    const f = box(name, { width: 288, height: 46, backgroundColor: C.surfaceLift, borderRadius: R.chip })
+    f.states = [{
       id: uid('st'), trigger: 'focus',
       overrides: { backgroundColor: C.line, shadowBlur: 0, shadowSpread: 3, shadowColor: '#6366f166' },
       timing: { duration: 150, easing: 'ease-out', delay: 0 },
     }]
-    return field
+    return f
   }
-  const email = mk('Email Field', 200)
-  const pass = mk('Password Field', 258)
-  const cta = lift(button('Sign In', 'Sign in', { x: 336, y: 320, width: 288 }), -2, C.accentSoft)
-  const els = [card, title, sub, email, pass, cta]
+  const email = field('Email Field')
+  const pass = field('Password Field')
+  const cta = lift(button('Sign In', 'Sign in', { width: 288 }), -2, C.accentSoft)
+  const els = [title, sub, email, pass, cta]
+
+  const card = container('Form Card', { direction: 'column', gap: 16, padding: 36, align: 'stretch' }, els)
+  card.base.backgroundColor = C.surface
+  card.base.borderRadius = R.card
+  card.base.shadowY = 16
+  card.base.shadowBlur = 44
+  card.base.shadowColor = '#00000066'
+  card.base.width = 360
+
+  const root = container('Sign In', { direction: 'column', gap: 0, padding: 60, align: 'center', justify: 'center' }, [card])
   const end = stagger(els, 'fade-in-up', 65, 0)
-  const g = grouped('Sign In', els)
-  return scene('App UI — Sign In', 960, 480, end, els, [g])
+  const doc = scene('App UI — Sign In', 960, 480, end, els, [root, card])
+  relayout(doc)
+  return doc
 }
 
-/** Phone frame with a list building itself. */
+/** A phone frame that pops in, then fills with list rows. */
 function appOnboarding(): Doc {
-  const frame = box('Phone', { x: 372, y: 40, width: 216, height: 400, backgroundColor: C.surface, borderRadius: 30, shadowY: 20, shadowBlur: 50, shadowColor: '#00000073' })
-  const notch = box('Notch', { x: 448, y: 60, width: 64, height: 10, backgroundColor: C.bg, borderRadius: R.pill })
-  const header = text('Screen Title', 'Your day', { x: 400, y: 96, width: 180, height: 30, fontSize: 22, fontWeight: 700 })
-  const rows: StudioElement[] = []
+  const notch = box('Notch', { width: 64, height: 10, backgroundColor: C.bg, borderRadius: R.pill })
+  const header = text('Screen Title', 'Your day', { width: 160, height: 30, fontSize: 22, fontWeight: 700 })
+  header.widthMode = 'fill'
+
+  const rowEls: StudioElement[] = []
+  const rowGroups: Group[] = []
   for (let i = 0; i < 4; i++) {
-    const y = 148 + i * 62
-    rows.push(box(`Row ${i + 1}`, { x: 400, y, width: 160, height: 48, backgroundColor: C.surfaceLift, borderRadius: R.tile }))
-    rows.push(box(`Row ${i + 1} Dot`, { x: 412, y: y + 14, width: 20, height: 20, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.pill }))
+    const dot = box(`Row ${i + 1} Dot`, { width: 20, height: 20, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.pill })
+    const bar = box(`Row ${i + 1} Bar`, { width: 96, height: 10, backgroundColor: C.line, borderRadius: R.pill })
+    bar.widthMode = 'fill'
+    const row = container(`Row ${i + 1}`, { direction: 'row', gap: 12, padding: 14, align: 'center' }, [dot, bar])
+    row.base.backgroundColor = C.surfaceLift
+    row.base.borderRadius = R.tile
+    row.widthMode = 'fill'
+    rowEls.push(dot, bar)
+    rowGroups.push(row)
   }
-  const chrome = [frame, notch, header]
+  const list = container('Rows', { direction: 'column', gap: 12, padding: 0, align: 'stretch' }, rowGroups)
+  list.widthMode = 'fill'
+
+  const phone = container('Phone', { direction: 'column', gap: 18, padding: 20, align: 'stretch' }, [notch, header, list])
+  phone.base.backgroundColor = C.surface
+  phone.base.borderRadius = 30
+  phone.base.shadowY = 20
+  phone.base.shadowBlur = 50
+  phone.base.shadowColor = '#00000073'
+  phone.base.width = 240
+
+  const root = container('Onboarding', { direction: 'column', gap: 0, padding: 24, align: 'center', justify: 'center' }, [phone])
+  const chrome = [notch, header]
   const a = stagger(chrome, 'pop-in', 60, 0)
-  const b = stagger(rows, 'fade-in-left', 55, 260)
-  const els = [...chrome, ...rows]
-  const g = grouped('Onboarding', els)
-  return scene('App UI — Onboarding', 960, 480, Math.max(a, b), els, [g])
+  const b = stagger(rowEls, 'fade-in-left', 55, 260)
+  const doc = scene('App UI — Onboarding', 960, 480, Math.max(a, b), [...chrome, ...rowEls],
+    [root, phone, list, ...rowGroups])
+  relayout(doc)
+  return doc
 }
 
-/** Product card with a badge and a hover-lifting button. */
+/** A shop card that rises into place and lifts under the cursor. */
 function productCard(): Doc {
-  const card = lift(box('Product Card', { x: 340, y: 70, width: 280, height: 340, backgroundColor: C.surface, borderRadius: R.card, shadowY: 14, shadowBlur: 38, shadowColor: '#00000059' }), -8)
-  const image = box('Product Image', { x: 364, y: 94, width: 232, height: 168, backgroundColor: C.surfaceLift, borderRadius: R.tile })
-  const badge = box('Badge', { x: 380, y: 110, width: 72, height: 26, backgroundColor: C.cyan, borderRadius: R.pill })
-  const badgeText = text('Badge Text', 'New', { x: 400, y: 114, width: 60, fontSize: 12, color: '#06281e', fontWeight: 700 })
-  const title = text('Product Title', 'Aurora Lamp', { x: 364, y: 280, width: 220, height: 26, fontSize: 19, fontWeight: 700 })
-  const price = text('Product Price', '$148', { x: 364, y: 310, width: 120, fontSize: 16, color: C.mute })
-  const cta = lift(button('Add To Cart', 'Add to cart', { x: 364, y: 348, width: 232 }), -3, C.accentSoft)
-  const els = [card, image, badge, badgeText, title, price, cta]
+  const badgeText = text('Badge Text', 'New', { width: 60, height: 18, fontSize: 12, color: '#06281e', fontWeight: 700 })
+  const badge = container('Badge', { direction: 'row', gap: 0, padding: 6, align: 'center', justify: 'center' }, [badgeText])
+  badge.base.backgroundColor = C.cyan
+  badge.base.borderRadius = R.pill
+
+  const image = container('Product Image', { direction: 'column', gap: 0, padding: 14, align: 'start' }, [badge])
+  image.base.backgroundColor = C.surfaceLift
+  image.base.borderRadius = R.tile
+  image.base.height = 168
+  image.widthMode = 'fill'
+
+  const title = text('Product Title', 'Aurora Lamp', { width: 232, height: 26, fontSize: 19, fontWeight: 700 })
+  const price = text('Product Price', '$148', { width: 232, height: 22, fontSize: 16, color: C.mute })
+  const cta = lift(button('Add To Cart', 'Add to cart', { width: 232 }), -3, C.accentSoft)
+  for (const e of [title, price, cta]) e.widthMode = 'fill'
+
+  const card = lift(
+    container('Product Card', { direction: 'column', gap: 14, padding: 24, align: 'stretch' }, [image, title, price, cta]),
+    -8
+  )
+  card.base.backgroundColor = C.surface
+  card.base.borderRadius = R.card
+  card.base.shadowY = 14
+  card.base.shadowBlur = 38
+  card.base.shadowColor = '#00000059'
+  card.base.width = 300
+
+  const root = container('Product', { direction: 'column', gap: 0, padding: 40, align: 'center', justify: 'center' }, [card])
+  const els = [badgeText, title, price, cta]
   const end = stagger(els, 'fade-in-up', 55, 0)
-  const g = grouped('Product', els)
-  return scene('Commerce — Product Card', 960, 480, end, els, [g])
+  const doc = scene('Commerce — Product Card', 960, 480, end, els, [root, card, image, badge])
+  relayout(doc)
+  return doc
 }
 
-/** A splash that loops while something loads. */
+/** A splash that fades in, then breathes and fills while it waits. */
 function loadingScreen(): Doc {
-  const mark = box('Logo Mark', { x: 440, y: 168, width: 80, height: 80, backgroundColor: C.accent, borderRadius: 22 })
-  const inner = box('Logo Inner', { x: 466, y: 194, width: 28, height: 28, backgroundColor: C.white, borderRadius: 9 })
-  const label = text('Loading Label', 'Preparing your scene', { x: 360, y: 274, width: 240, fontSize: 14, color: C.mute })
-  const trackBar = box('Track', { x: 380, y: 310, width: 200, height: 6, backgroundColor: C.line, borderRadius: R.pill })
-  const fill = box('Fill', { x: 380, y: 310, width: 70, height: 6, backgroundColor: C.cyan, borderRadius: R.pill })
+  const inner = box('Logo Inner', { width: 28, height: 28, backgroundColor: C.white, borderRadius: 9 })
+  const mark = container('Logo Mark', { direction: 'row', gap: 0, padding: 26, align: 'center', justify: 'center' }, [inner])
+  mark.base.backgroundColor = C.accent
+  mark.base.borderRadius = 22
 
-  const intro = stagger([mark, inner, label, trackBar], 'fade-in', 70, 0)
-  // the mark keeps breathing and the fill keeps travelling — a loop, not an entrance
+  const label = text('Loading Label', 'Preparing your scene', { width: 240, height: 20, fontSize: 14, color: C.mute })
+  const fill = box('Fill', { width: 70, height: 6, backgroundColor: C.cyan, borderRadius: R.pill })
+  const track = container('Track', { direction: 'row', gap: 0, padding: 0, align: 'center' }, [fill])
+  track.base.backgroundColor = C.line
+  track.base.borderRadius = R.pill
+  track.base.width = 200
+  track.base.height = 6
+
+  const root = container('Loading', { direction: 'column', gap: 26, padding: 40, align: 'center', justify: 'center' }, [mark, label, track])
+
+  const intro = stagger([inner, label, fill], 'fade-in', 70, 0)
   const breathe = PRESETS.find((p) => p.id === 'breathe')!
-  mark.tracks = [...mark.tracks, ...presetTracks(breathe, mark, 0)]
+  inner.tracks = [...inner.tracks, ...presetTracks(breathe, inner, 0)]
   const slide = PRESETS.find((p) => p.id === 'slide-in-right')!
   fill.tracks = presetTracks(slide, fill, 0)
-  const els = [mark, inner, label, trackBar, fill]
-  const g = grouped('Loading', els)
-  return scene('Feedback — Loading Screen', 960, 480, Math.max(intro, breathe.duration), els, [g])
+
+  const els = [inner, label, fill]
+  const doc = scene('Feedback — Loading Screen', 960, 480, Math.max(intro, breathe.duration), els,
+    [root, mark, track])
+  relayout(doc)
+  return doc
 }
 
 /** A section that reveals itself as the reader scrolls to it. */
 function scrollReveal(): Doc {
-  const heading = text('Section Heading', 'Built for the scroll', {
-    x: 64, y: 96, width: 520, height: 44, fontSize: 38, fontWeight: 800,
-  })
-  const sub = text('Section Sub', 'Each block arrives as it reaches the viewport.', {
-    x: 64, y: 150, width: 520, fontSize: 17, color: C.mute,
-  })
-  const rows: StudioElement[] = []
+  const heading = text('Section Heading', 'Built for the scroll', { width: 520, height: 44, fontSize: 36, fontWeight: 800 })
+  const sub = text('Section Sub', 'Each block arrives as it reaches the viewport.', { width: 520, height: 24, fontSize: 17, color: C.mute })
+  heading.widthMode = 'fill'
+  sub.widthMode = 'fill'
+
+  const rowEls: StudioElement[] = []
+  const rowGroups: Group[] = []
   for (let i = 0; i < 3; i++) {
-    const y = 208 + i * 88
-    rows.push(box(`Row ${i + 1}`, { x: 64, y, width: 560, height: 72, backgroundColor: C.surface, borderRadius: R.card }))
-    rows.push(box(`Row ${i + 1} Mark`, { x: 88, y: y + 20, width: 32, height: 32, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.chip }))
-    rows.push(box(`Row ${i + 1} Line`, { x: 136, y: y + 26, width: 300, height: 10, backgroundColor: C.line, borderRadius: R.pill }))
+    const mark = box(`Row ${i + 1} Mark`, { width: 32, height: 32, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.chip })
+    const line = box(`Row ${i + 1} Line`, { width: 300, height: 10, backgroundColor: C.line, borderRadius: R.pill })
+    line.widthMode = 'fill'
+    const row = container(`Row ${i + 1}`, { direction: 'row', gap: 18, padding: 20, align: 'center' }, [mark, line])
+    row.base.backgroundColor = C.surface
+    row.base.borderRadius = R.card
+    row.widthMode = 'fill'
+    rowEls.push(mark, line)
+    rowGroups.push(row)
   }
-  const aside = box('Aside', { x: 664, y: 96, width: 232, height: 272, backgroundColor: C.surfaceLift, borderRadius: R.card })
+  const left = container('Section Copy', { direction: 'column', gap: 16, padding: 0, align: 'stretch' },
+    [heading, sub, ...rowGroups])
+  left.widthMode = 'fill'
+
+  const aside = box('Aside Panel', { width: 232, height: 272, backgroundColor: C.surfaceLift, borderRadius: R.card })
+  const asideCol = container('Aside', { direction: 'column', gap: 0, padding: 0, align: 'stretch' }, [aside])
+
+  const root = container('Scroll Section', { direction: 'row', gap: 40, padding: 48, align: 'start', wrap: true }, [left, asideCol])
 
   const copy = [heading, sub]
   const a = stagger(copy, 'fade-in-up', 90, 0)
-  const b = stagger(rows, 'fade-in-up', 40, 120)
+  const b = stagger(rowEls, 'fade-in-up', 40, 120)
   const c = stagger([aside], 'fade-in-right', 0, 200)
 
-  const els = [...copy, ...rows, aside]
-  // the whole point of this one: scroll advances it, not a timer
+  const els = [...copy, ...rowEls, aside]
   onScroll(els, 'enter')
-  const g = grouped('Scroll Section', els)
-  return scene('Scroll — Reveal Section', 960, 480, Math.max(a, b, c), els, [g])
+  const doc = scene('Scroll — Reveal Section', 960, 480, Math.max(a, b, c), els,
+    [root, left, asideCol, ...rowGroups])
+  relayout(doc)
+  return doc
 }
 
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = ['Hero', 'Marketing', 'Scroll', 'Commerce', 'App UI', 'Feedback']

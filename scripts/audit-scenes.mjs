@@ -342,7 +342,11 @@ for (const preset of COMPONENT_PRESETS) {
 for (const t of TEMPLATES) {
   const doc = t.build()
   auditDoc(t.id, 'template', doc)
-  if (doc.elements.length < 4) add(t.id, 'too-simple', `${doc.elements.length} elements — that is a component, not a scene`, 'template')
+  // Structure lives in containers as well as elements once a scene is laid out,
+  // so counting leaves alone understates it — a loading screen built from three
+  // containers is not simpler than one built from six loose boxes.
+  const pieces = doc.elements.length + doc.groups.length
+  if (pieces < 5) add(t.id, 'too-simple', `${pieces} pieces — that is a component, not a scene`, 'template')
   const orphans = doc.elements.filter((e) => e.groupId && !doc.groups.some((g) => g.id === e.groupId))
   if (orphans.length) add(t.id, 'orphan-element', `${orphans.length} element(s) point at a missing group`, 'template')
   // a scene should read as a sequence, not a simultaneous flash

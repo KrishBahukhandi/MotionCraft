@@ -82,7 +82,9 @@ a scroll-driven scene inside a card would sit at one frame forever.
 and `:checked` compiled to `transition`, with optional per-state timing for asymmetric
 motion (fast press, slower release). Most component motion is a state change, not a loop.
 
-**10 scene templates** — a hero, a pricing table, a feature grid, a testimonial, a
+**11 scene templates**, every one built on auto-layout containers — they export as flexbox
+and hold up from 960px down to 400px, rather than replaying coordinates measured on an
+artboard. Formerly — a hero, a pricing table, a feature grid, a testimonial, a
 stat row, a toast stack, a sign-in card, an onboarding screen, a product card and a
 loading screen. Not one animation on one box: a laid-out scene whose elements enter in
 a deliberate order, ready to edit or export. Choreography is the tedious part to build
