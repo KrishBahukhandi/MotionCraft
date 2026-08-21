@@ -44,7 +44,8 @@ up from `vercel.json` automatically.
 ### Working with code you already have
 
 **Import CSS** — paste `@keyframes`, `transition` and `:hover` rules and get them back as an
-editable timeline. `transform`, `filter` and `box-shadow` are split back into individual
+editable timeline. The landing page has its own paste box, so this is reachable without opening
+the studio first; the parsed scene travels to the editor in the link fragment, never to a server. `transform`, `filter` and `box-shadow` are split back into individual
 properties. The import is lossy by nature, so it says so: matrix transforms, gradients,
 multiple shadows, unsupported filters and missing keyframes are each reported with a reason
 rather than dropped quietly.

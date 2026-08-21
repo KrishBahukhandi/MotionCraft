@@ -34,6 +34,7 @@ import { GALLERY, findGalleryEntry } from '@/lib/gallery'
 import { docStylesheet } from '@/lib/cssgen'
 import { GalleryPreview } from '@/components/gallery/GalleryPreview'
 import { HeroStudio } from './HeroStudio'
+import { PasteCss } from './PasteCss'
 import { Kbd } from '@/components/ui/primitives'
 import { Seo } from '@/components/Seo'
 
@@ -299,6 +300,30 @@ export function Landing() {
             ))}
           </div>
         </FadeIn>
+      </section>
+
+      {/*
+        The third way in. The hero starts from scratch and the gallery hands you
+        a finished one; this takes what you already wrote. It was the most
+        distinctive thing the tool does and the only one you could not reach
+        from this page.
+      */}
+      <section id="paste" className="border-y border-edge/[0.07] bg-panel/40 py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <FadeIn>
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+              Already have the CSS? <span className="mc-gradient-text">Paste it.</span>
+            </h2>
+          </FadeIn>
+          <FadeIn>
+            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-mute">
+              Existing animation code becomes an editable timeline — no rebuilding it by hand.
+            </p>
+          </FadeIn>
+          <FadeIn className="mt-10">
+            <PasteCss />
+          </FadeIn>
+        </div>
       </section>
 
       {/* features */}

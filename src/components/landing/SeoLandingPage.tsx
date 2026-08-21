@@ -7,6 +7,8 @@ import { GalleryPreview } from '@/components/gallery/GalleryPreview'
 import { findGalleryEntry, type GalleryEntry } from '@/lib/gallery'
 import { getFormat } from '@/lib/exporters'
 import { CodeBlock } from '@/lib/highlight'
+import { EasingEditor } from '@/components/studio/EasingEditor'
+import { transitionTimingFunction } from '@/lib/easing'
 import { encodeDoc, buildShareUrl } from '@/lib/share'
 import { copyText } from '@/lib/utils'
 
@@ -29,6 +31,8 @@ export type SeoPage = {
   related: string[]
   /** export format this page is about; the studio opens on it */
   format?: string
+  /** an actual working tool to put above the fold, where the page has one */
+  tool?: 'bezier'
 }
 
 export const SEO_PAGES: SeoPage[] = [
@@ -64,6 +68,7 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'cubic-bezier-editor',
+    tool: 'bezier',
     featured: 'elastic-entrance',
     related: ['bounce-in-animation', 'zoom-in-animation', 'toast-notification-slide-in'],
     title: 'Cubic Bezier Editor — Visual CSS Easing Generator | MotionCraft',
@@ -115,6 +120,60 @@ export const SEO_PAGES: SeoPage[] = [
  * The working example each page leads with: a running animation, its real CSS,
  * and a link that opens the same scene in the editor.
  */
+/**
+ * The curve editor itself, not a description of it.
+ *
+ * This page ranks for people who want to tune a cubic-bezier right now. Making
+ * them read a pitch and then find the tool behind a "Launch Studio" button
+ * loses them — it is the same editor the studio uses, so put it on the page.
+ */
+function BezierPlayground() {
+  const [easing, setEasing] = useState('cubic-bezier(0.34, 1.56, 0.64, 1)')
+  const [copied, setCopied] = useState(false)
+  // bounce, elastic and spring are our ids, not CSS keywords — emitting them
+  // raw would hand someone a declaration the browser throws away
+  const timing = transitionTimingFunction(easing)
+  const declaration = `animation-timing-function: ${timing.css};`
+
+  return (
+    <div className="grid gap-8 rounded-2xl border border-edge/10 bg-panel p-6 md:grid-cols-[auto_minmax(0,1fr)] md:p-8">
+      <EasingEditor value={easing} onChange={setEasing} />
+      <div className="flex min-w-0 flex-col justify-center">
+        <p className="text-[15px] leading-relaxed text-mute">
+          Drag the handles, or start from a preset. The dot replays the motion on every change, so
+          you are judging the movement rather than the numbers.
+        </p>
+        <div className="mt-5 overflow-hidden rounded-xl border border-edge/10 bg-[#0d0e14]">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-2">
+            <span className="font-mono text-[11px] text-white/40">timing function</span>
+            <button
+              type="button"
+              onClick={async () => {
+                if (await copyText(declaration)) {
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1600)
+                }
+              }}
+              className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-lg bg-white/[0.08] px-2.5 text-[11.5px] font-medium text-white/90 transition-colors hover:bg-white/[0.14]"
+            >
+              {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <code className="block overflow-x-auto px-3 py-2.5 font-mono text-[12.5px] text-white/85">
+            {declaration}
+          </code>
+        </div>
+        <p className="mt-3 text-[12.5px] text-mute">
+          {timing.approximated
+            ? 'Bounce, elastic and spring oscillate, and no single cubic-bezier can. That is the closest curve — the studio bakes the real motion into extra keyframes on export.'
+            : 'Paste it onto any animation or transition.'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function LiveExample({ entry, formatId = 'css' }: { entry: GalleryEntry; formatId?: string }) {
   const [copied, setCopied] = useState(false)
   const [studioHref, setStudioHref] = useState('/studio')
@@ -197,6 +256,18 @@ export function SeoLandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center px-5"><Link to="/" className="flex items-center gap-2"><Logo size={26} /><span className="font-bold">MotionCraft</span></Link><Link to="/gallery" className="ml-auto text-[13px] font-medium text-mute transition-colors hover:text-ink">Gallery</Link><Link to="/studio" className="ml-5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Launch Studio</Link></div>
       </nav>
       <section className="mc-hero-glow px-5 py-20 md:py-28"><div className="mx-auto max-w-3xl text-center"><p className="mb-4 inline-flex items-center gap-2 rounded-full border border-edge/10 bg-panel px-3 py-1.5 text-sm text-mute"><Sparkles size={14} className="text-accent" /> Free, local and no login</p><h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">{page.h1}</h1><p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-mute">{page.intro}</p><Link to="/studio" className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-semibold text-white">Create an animation <ArrowRight size={17} /></Link></div></section>
+      {page.tool === 'bezier' && (
+        <section className="mx-auto max-w-6xl px-5 py-14">
+          <h2 className="text-3xl font-bold">The curve editor</h2>
+          <p className="mt-3 max-w-2xl leading-relaxed text-mute">
+            Nothing to install and nothing to open — this is the editor from the studio.
+          </p>
+          <div className="mt-8">
+            <BezierPlayground />
+          </div>
+        </section>
+      )}
+
       {featured && (
         <section className="mx-auto max-w-6xl px-5 py-14">
           <h2 className="text-3xl font-bold">Try it right here</h2>
