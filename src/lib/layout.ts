@@ -108,7 +108,28 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
   const innerMain = growers.length > 0 ? contentMain : fixedMain + gapTotal
   const innerCross = Math.max(crossMax, Number(group.base[row ? 'height' : 'width'] ?? 0) - padding * 2)
 
-  // 3. main-axis start offset and the space between items
+  /*
+   * 3. break into lines when wrapping is on.
+   *
+   * Only meaningful with a declared main size — without one there is nothing to
+   * overflow, so everything stays on one line and this is a no-op.
+   */
+  const wrapLimit = layout.wrap && declaredMain > 0 ? declaredMain - padding * 2 : Infinity
+  const lines: (typeof sizes)[] = [[]]
+  let lineMain = 0
+  for (const s of sizes) {
+    const own = mainSize(layout, s.w, s.h)
+    const line = lines[lines.length - 1]
+    if (line.length > 0 && lineMain + gap + own > wrapLimit) {
+      lines.push([s])
+      lineMain = own
+    } else {
+      line.push(s)
+      lineMain += (line.length > 1 ? gap : 0) + own
+    }
+  }
+
+  // 4. main-axis start offset and the space between items
   const slack = Math.max(0, innerMain - (fixedMain + gapTotal + perGrower * growers.length))
   let cursor = padding
   let between = gap
@@ -128,7 +149,14 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
   const originX = 0
   const originY = 0
 
-  for (const s of sizes) {
+  let lineCross = padding
+  for (const line of lines) {
+    cursor = padding
+    if (justify === 'center') cursor += slack / 2
+    else if (justify === 'end') cursor += slack
+    let tallest = 0
+
+  for (const s of line) {
     if (s.grows) {
       if (row) s.w = perGrower
       else s.h = perGrower
@@ -140,9 +168,10 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
 
     const own = row ? s.w : s.h
     const cross = row ? s.h : s.w
-    let crossPos = padding
-    if (align === 'center') crossPos += (innerCross - cross) / 2
-    else if (align === 'end') crossPos += innerCross - cross
+    const lineRoom = lines.length > 1 ? cross : innerCross
+    let crossPos = lines.length > 1 ? lineCross : padding
+    if (align === 'center') crossPos += (lineRoom - cross) / 2
+    else if (align === 'end') crossPos += lineRoom - cross
 
     const x = row ? cursor : crossPos
     const y = row ? crossPos : cursor
@@ -185,6 +214,10 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
     }
 
     cursor += own + between
+    tallest = Math.max(tallest, cross)
+  }
+
+    lineCross += tallest + gap
   }
 
   return row
@@ -204,9 +237,21 @@ export function relayout(doc: Doc): Doc {
   walk(null)
   for (const g of order) {
     if (!g.layout) continue
+    /*
+     * A top-level container spans the artboard, which is what `inset: 0` gives
+     * it in the exported CSS. Without that it has no main size to distribute,
+     * so children that all `fill` share nothing and the whole container
+     * collapses to the sum of its gaps.
+     */
+    if (!g.parentId) {
+      if (!g.base.width) g.base.width = doc.width
+      if (!g.base.height) g.base.height = doc.height
+    }
     const box = solveGroup(doc, g)
-    g.base.width = box.width
-    g.base.height = box.height
+    if (g.parentId) {
+      g.base.width = box.width
+      g.base.height = box.height
+    }
   }
   return doc
 }

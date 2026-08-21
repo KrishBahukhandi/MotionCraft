@@ -271,10 +271,17 @@ export function generateNodeCss(
   let baseDecls = cssDecls(relativeTo(node.base, origin), null)
 
   if (isGroup(node)) {
-    // groups are transform-only containers laid over the artboard
-    delete baseDecls['width']
-    delete baseDecls['height']
-    delete baseDecls['background']
+    /*
+     * A group without a layout is a transform-only container laid over the
+     * artboard, so it has no box of its own to paint or size. One *with* a
+     * layout is a real element — a card with a background and a radius — and
+     * stripping those would leave every container invisible.
+     */
+    if (!node.layout) {
+      delete baseDecls['width']
+      delete baseDecls['height']
+      delete baseDecls['background']
+    }
     const bb = groupBBox(doc, node.id)
     if (bb.w > 0) {
       baseDecls['transform-origin'] = `${fmt(bb.x + bb.w / 2)}px ${fmt(bb.y + bb.h / 2)}px`
@@ -531,18 +538,25 @@ export function layoutStylesheet(doc: Doc, prefix = ''): string {
             : 'flex: 0 0 auto'
         // min-width:auto is the flexbox default and it stops an item shrinking
         // below its content, which is what makes a "responsive" row overflow
+        /*
+         * border-box, or the padding is added to the declared width and every
+         * container ends up wider than the box it was measured into. The
+         * solver works in border-box terms, so the CSS has to as well.
+         */
         const place = nestedInFlow
-          ? `position: relative; min-width: 0; min-height: 0; ${flexMode}`
-          : 'position: absolute; inset: 0'
+          ? `position: relative; box-sizing: border-box; min-width: 0; min-height: 0; ${flexMode}`
+          : 'position: absolute; inset: 0; box-sizing: border-box'
         rules.push(
           `.${cls} { ${place}; display: flex; flex-direction: ${l.direction}; gap: ${fmt(l.gap)}px; ` +
             `padding: ${fmt(l.padding)}px; align-items: ${ALIGN[l.align]}; ` +
-            `justify-content: ${JUSTIFY[l.justify]}; }`
+            `justify-content: ${JUSTIFY[l.justify]};` +
+            (l.wrap ? ' flex-wrap: wrap; align-content: flex-start;' : '') +
+            ` }`
         )
       } else if (nestedInFlow) {
         const grows =
           (outer?.layout?.direction === 'row' ? node.widthMode : node.heightMode) === 'fill'
-        rules.push(`.${cls} { position: relative; min-width: 0; min-height: 0; flex: ${grows ? '1 1 0' : '0 0 auto'}; }`)
+        rules.push(`.${cls} { position: relative; box-sizing: border-box; min-width: 0; min-height: 0; flex: ${grows ? '1 1 0' : '0 0 auto'}; }`)
       } else {
         rules.push(`.${cls} { position: absolute; inset: 0; }`)
       }
@@ -550,7 +564,7 @@ export function layoutStylesheet(doc: Doc, prefix = ''): string {
       const parent = doc.groups.find((g) => g.id === node.groupId)
       if (parent?.layout) {
         // in flow: the parent places it, so no absolute pinning and no baked offset
-        const decls = ['position: relative', 'margin: 0', 'border: 0', 'min-width: 0', 'min-height: 0']
+        const decls = ['position: relative', 'box-sizing: border-box', 'margin: 0', 'border: 0', 'min-width: 0', 'min-height: 0']
         const wMode = node.widthMode ?? 'fixed'
         const hMode = node.heightMode ?? 'fixed'
         const main = parent.layout.direction === 'row' ? wMode : hMode

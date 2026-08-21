@@ -99,7 +99,9 @@ generated code and a note on why it is built that way.
 Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
 on a group — are shown unavailable rather than applied to no effect.
 
-**Auto layout** — containers nest: a pricing row holds three card columns, each laying out
+**Auto layout** — rows can wrap rather than squeeze, and a container is a real box: it
+paints a background, a radius and a shadow, because a card that cannot have a surface is not
+a card. Containers nest: a pricing row holds three card columns, each laying out
 its own contents, so it exports as a flex row of flex columns and the browser re-solves the
 whole thing. Measured: the same markup gives 272px columns at 960 and 165px at 640, with no
 overflow at either. Dragging a child of a laid-out group reorders it rather than moving it,

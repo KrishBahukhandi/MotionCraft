@@ -95,8 +95,10 @@ const button = (name: string, label: string, base: BaseProps = {}) =>
     ...base,
   })
 
-/** A hover lift, as an interaction state rather than a keyframe. */
-function lift(el: StudioElement, dy = -4, tint?: string): StudioElement {
+/** A hover lift, as an interaction state rather than a keyframe. Works on a
+ *  container as well as an element — a whole card lifting is one state, not one
+ *  per box inside it. */
+function lift<T extends StudioElement | Group>(el: T, dy = -4, tint?: string): T {
   el.states = [
     {
       id: uid('st'),
@@ -299,62 +301,109 @@ function pricingThree(): Doc {
   return doc
 }
 
-/** Six feature tiles arriving as a wave. */
+/**
+ * Six feature tiles arriving as a wave.
+ *
+ * A wrapping row of tile containers: three across when there is room, two or
+ * one when there is not, rather than six tiles squeezed to nothing.
+ */
 function featureGrid(): Doc {
-  const els: StudioElement[] = []
-  const labels = ['Canvas', 'Timeline', 'Easing', 'States', 'Export', 'Import']
-  labels.forEach((label, i) => {
-    const col = i % 3
-    const row = Math.floor(i / 3)
-    const x = 64 + col * 288
-    const y = 108 + row * 176
-    const tile = lift(box(`${label} Tile`, {
-      x, y, width: 256, height: 148, backgroundColor: C.surface, borderRadius: R.card,
-    }), -5, C.surfaceLift)
+  const all: StudioElement[] = []
+  const tiles: Group[] = []
+  for (const label of ['Canvas', 'Timeline', 'Easing', 'States', 'Export', 'Import']) {
+    const i = tiles.length
     const icon = box(`${label} Icon`, {
-      x: x + 24, y: y + 24, width: 38, height: 38,
-      backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.chip,
+      width: 38, height: 38, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.chip,
     })
-    const name = text(`${label} Title`, label, { x: x + 24, y: y + 76, width: 200, fontSize: 16, fontWeight: 700 })
-    const line = box(`${label} Line`, { x: x + 24, y: y + 106, width: 168, height: 8, backgroundColor: C.line, borderRadius: R.pill })
-    els.push(tile, icon, name, line)
-  })
-  const end = stagger(els, 'pop-in', 45, 0)
-  const g = grouped('Features', els)
-  return scene('Features — Tile Grid', 960, 480, end, els, [g])
+    const name = text(`${label} Title`, label, { width: 200, height: 22, fontSize: 16, fontWeight: 700 })
+    const line = box(`${label} Line`, { width: 168, height: 8, backgroundColor: C.line, borderRadius: R.pill })
+    name.widthMode = 'fill'
+    line.widthMode = 'fill'
+    const kids = [icon, name, line]
+    all.push(...kids)
+    const tile = lift(
+      container(`${label} Tile`, { direction: 'column', gap: 14, padding: 24, align: 'start' }, kids),
+      -5,
+      C.surfaceLift
+    )
+    tile.base.backgroundColor = C.surface
+    tile.base.borderRadius = R.card
+    tile.base.width = 256
+    tiles.push(tile)
+  }
+  const grid = container(
+    'Features',
+    { direction: 'row', gap: 20, padding: 40, align: 'start', wrap: true },
+    tiles
+  )
+  grid.base.width = 960
+  const end = stagger(all, 'pop-in', 45, 0)
+  const doc = scene('Features — Tile Grid', 960, 480, end, all, [grid, ...tiles])
+  relayout(doc)
+  return doc
 }
 
-/** A quote that slides in under its avatar. */
+/** A quote card that rises into place, avatar first. */
 function testimonial(): Doc {
-  const card = box('Quote Card', { x: 180, y: 110, width: 600, height: 260, backgroundColor: C.surface, borderRadius: R.card, shadowY: 14, shadowBlur: 40, shadowColor: '#00000059' })
-  const avatar = box('Avatar', { x: 216, y: 146, width: 56, height: 56, backgroundColor: C.accent, borderRadius: R.pill })
-  const q1 = text('Quote 1', 'It replaced three tools and a', { x: 216, y: 232, width: 540, fontSize: 22, fontWeight: 600 })
-  const q2 = text('Quote 2', 'folder of half-finished CSS.', { x: 216, y: 264, width: 540, fontSize: 22, fontWeight: 600 })
-  const who = text('Attribution', 'Frontend engineer', { x: 292, y: 164, width: 300, fontSize: 14, color: C.mute })
-  const role = text('Role', 'Design systems', { x: 292, y: 184, width: 300, fontSize: 13, color: C.faint })
-  const els = [card, avatar, who, role, q1, q2]
+  const avatar = box('Avatar', { width: 56, height: 56, backgroundColor: C.accent, borderRadius: R.pill })
+  const who = text('Attribution', 'Frontend engineer', { width: 300, height: 20, fontSize: 14, color: C.mute })
+  const role = text('Role', 'Design systems', { width: 300, height: 18, fontSize: 13, color: C.faint })
+  who.widthMode = 'fill'
+  role.widthMode = 'fill'
+  const person = container('Person', { direction: 'column', gap: 4, padding: 0, align: 'start' }, [who, role])
+  person.widthMode = 'fill'
+  const head = container('Quote Head', { direction: 'row', gap: 20, padding: 0, align: 'center' }, [avatar, person])
+  head.widthMode = 'fill'
+
+  const q1 = text('Quote 1', 'It replaced three tools and a', { width: 540, height: 30, fontSize: 22, fontWeight: 600 })
+  const q2 = text('Quote 2', 'folder of half-finished CSS.', { width: 540, height: 30, fontSize: 22, fontWeight: 600 })
+  q1.widthMode = 'fill'
+  q2.widthMode = 'fill'
+
+  const card = container('Quote Card', { direction: 'column', gap: 22, padding: 36, align: 'start' }, [head, q1, q2])
+  card.base.backgroundColor = C.surface
+  card.base.borderRadius = R.card
+  card.base.shadowY = 14
+  card.base.shadowBlur = 40
+  card.base.shadowColor = '#00000059'
+  card.widthMode = 'fill'
+
+  const outer = container('Testimonial', { direction: 'column', gap: 0, padding: 90, align: 'stretch', justify: 'center' }, [card])
+  outer.base.width = 960
+
+  const els = [avatar, who, role, q1, q2]
   const end = stagger(els, 'fade-in-up', 70, 0)
-  const g = grouped('Testimonial', els)
-  return scene('Testimonial — Quote Card', 960, 480, end, els, [g])
+  const doc = scene('Testimonial — Quote Card', 960, 480, end, els, [outer, card, head, person])
+  relayout(doc)
+  return doc
 }
 
-/** Four figures counting themselves in. */
+/** Four figures dropping in with a small overshoot. */
 function statsRow(): Doc {
-  const els: StudioElement[] = []
+  const all: StudioElement[] = []
+  const cols: Group[] = []
   const stats = [
     { n: '58', l: 'motion presets' },
     { n: '17', l: 'components' },
     { n: '12', l: 'export formats' },
     { n: '0', l: 'accounts' },
   ]
-  stats.forEach((s, i) => {
-    const x = 64 + i * 216
-    els.push(text(`Stat ${i + 1}`, s.n, { x, y: 190, width: 190, height: 60, fontSize: 52, fontWeight: 800, color: i === 3 ? C.cyan : C.ink }))
-    els.push(text(`Label ${i + 1}`, s.l, { x, y: 256, width: 190, fontSize: 14, color: C.mute }))
+  stats.forEach((st, i) => {
+    const big = text(`Stat ${i + 1}`, st.n, { width: 190, height: 60, fontSize: 52, fontWeight: 800, color: i === 3 ? C.cyan : C.ink })
+    const lab = text(`Label ${i + 1}`, st.l, { width: 190, height: 20, fontSize: 14, color: C.mute })
+    big.widthMode = 'fill'
+    lab.widthMode = 'fill'
+    all.push(big, lab)
+    const col = container(`Stat Col ${i + 1}`, { direction: 'column', gap: 6, padding: 0, align: 'start' }, [big, lab])
+    col.widthMode = 'fill'
+    cols.push(col)
   })
-  const end = stagger(els, 'back-in-down', 60, 0)
-  const g = grouped('Stats', els)
-  return scene('Stats — Number Row', 960, 480, end, els, [g])
+  const row = container('Stats', { direction: 'row', gap: 28, padding: 64, align: 'center', justify: 'center', wrap: true }, cols)
+  row.base.width = 960
+  const end = stagger(all, 'back-in-down', 60, 0)
+  const doc = scene('Stats — Number Row', 960, 480, end, all, [row, ...cols])
+  relayout(doc)
+  return doc
 }
 
 /** Notifications arriving one after another. */

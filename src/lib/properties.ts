@@ -43,8 +43,8 @@ export const PROP_DEFS: PropDef[] = [
   { key: 'height', label: 'Height', group: 'layout', kind: 'number', unit: 'px', min: 1, step: 1, def: 100 },
   // appearance
   { key: 'opacity', label: 'Opacity', group: 'appearance', kind: 'number', unit: '', min: 0, max: 1, step: 0.01, def: 1, onGroup: true },
-  { key: 'backgroundColor', label: 'Fill', group: 'appearance', kind: 'color', def: '#6366f1' },
-  { key: 'borderRadius', label: 'Radius', group: 'appearance', kind: 'number', unit: 'px', min: 0, step: 1, def: 0 },
+  { key: 'backgroundColor', label: 'Fill', group: 'appearance', kind: 'color', def: '#6366f1', onGroup: true },
+  { key: 'borderRadius', label: 'Radius', group: 'appearance', kind: 'number', unit: 'px', min: 0, step: 1, def: 0, onGroup: true },
   // typography
   { key: 'color', label: 'Text Color', group: 'text', kind: 'color', def: '#ffffff', types: ['text', 'button', 'card'] },
   { key: 'fontSize', label: 'Font Size', group: 'text', kind: 'number', unit: 'px', min: 1, step: 1, def: 16, types: ['text', 'button', 'card'] },
@@ -56,11 +56,11 @@ export const PROP_DEFS: PropDef[] = [
   { key: 'saturate', label: 'Saturate', group: 'effects', kind: 'number', unit: '%', min: 0, max: 400, step: 1, def: 100, onGroup: true },
   { key: 'hueRotate', label: 'Hue Rotate', group: 'effects', kind: 'number', unit: 'deg', step: 1, def: 0, onGroup: true },
   { key: 'grayscale', label: 'Grayscale', group: 'effects', kind: 'number', unit: '%', min: 0, max: 100, step: 1, def: 0, onGroup: true },
-  { key: 'shadowX', label: 'Shadow X', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0 },
-  { key: 'shadowY', label: 'Shadow Y', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0 },
-  { key: 'shadowBlur', label: 'Shadow Bl', group: 'effects', kind: 'number', unit: 'px', min: 0, step: 1, def: 0 },
-  { key: 'shadowSpread', label: 'Shadow Sp', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0 },
-  { key: 'shadowColor', label: 'Shadow Col', group: 'effects', kind: 'color', def: '#00000000' },
+  { key: 'shadowX', label: 'Shadow X', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0, onGroup: true },
+  { key: 'shadowY', label: 'Shadow Y', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0, onGroup: true },
+  { key: 'shadowBlur', label: 'Shadow Bl', group: 'effects', kind: 'number', unit: 'px', min: 0, step: 1, def: 0, onGroup: true },
+  { key: 'shadowSpread', label: 'Shadow Sp', group: 'effects', kind: 'number', unit: 'px', step: 1, def: 0, onGroup: true },
+  { key: 'shadowColor', label: 'Shadow Col', group: 'effects', kind: 'color', def: '#00000000', onGroup: true },
   // stroke (SVG path elements)
   { key: 'strokeWidth', label: 'Width', group: 'stroke', kind: 'number', unit: 'px', min: 0, step: 0.5, def: 4, types: ['path'] },
   { key: 'strokeColor', label: 'Color', group: 'stroke', kind: 'color', def: '#8b7bff', types: ['path'] },

@@ -761,10 +761,11 @@ export const useStudio = create<StudioState>()(
     setSizeMode: (elementId, axis, mode) => {
       get().pushHistory()
       set((s) => {
-        const el = s.doc.elements.find((x) => x.id === elementId)
-        if (!el) return
-        if (axis === 'w') el.widthMode = mode
-        else el.heightMode = mode
+        // a nested container is sized the same way a child element is
+        const node = nodeIn(s.doc, elementId)
+        if (!node) return
+        if (axis === 'w') node.widthMode = mode
+        else node.heightMode = mode
         relayout(s.doc)
       })
     },

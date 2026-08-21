@@ -201,6 +201,14 @@ function LayoutSection({ node }: { node: StudioNode }) {
                   { value: 'stretch', label: 'Stretch to fill' },
                 ]}
               />
+              <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                <input
+                  type="checkbox"
+                  checked={!!l.wrap}
+                  onChange={(e) => s.getState().setGroupLayout(node.id, { wrap: e.target.checked })}
+                />
+                Wrap onto new lines
+              </label>
               <p className="text-[11px] leading-snug text-mute">
                 Exports as <code className="font-mono">display: flex</code> instead of absolute
                 positions, so it reflows at any width. The canvas shows the solved result.
@@ -213,7 +221,8 @@ function LayoutSection({ node }: { node: StudioNode }) {
   }
 
   const el = node as StudioElement
-  const parent = doc.groups.find((g) => g.id === el.groupId)
+  const parentId = isGroup(node) ? node.parentId : el.groupId
+  const parent = doc.groups.find((g) => g.id === parentId)
   if (!parent?.layout) return null
 
   const modes: { value: SizeMode; label: string }[] = [
@@ -225,13 +234,13 @@ function LayoutSection({ node }: { node: StudioNode }) {
     <Section title="Sizing" defaultOpen>
       <div className="grid grid-cols-2 gap-2">
         <Select
-          value={el.widthMode ?? 'fixed'}
-          onChange={(v) => s.getState().setSizeMode(el.id, 'w', v as SizeMode)}
+          value={node.widthMode ?? 'fixed'}
+          onChange={(v) => s.getState().setSizeMode(node.id, 'w', v as SizeMode)}
           options={modes.map((m) => ({ ...m, label: `W: ${m.label}` }))}
         />
         <Select
-          value={el.heightMode ?? 'fixed'}
-          onChange={(v) => s.getState().setSizeMode(el.id, 'h', v as SizeMode)}
+          value={node.heightMode ?? 'fixed'}
+          onChange={(v) => s.getState().setSizeMode(node.id, 'h', v as SizeMode)}
           options={modes.map((m) => ({ ...m, label: `H: ${m.label}` }))}
         />
       </div>

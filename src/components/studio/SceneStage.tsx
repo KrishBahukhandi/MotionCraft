@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactElement, ReactNode } from 'react'
 import { childGroups, elementsOfGroup, groupBBox, sampleNode, ungroupedElements } from '@/lib/engine'
-import { clipOf, filterOf, maskOf, transformOf } from '@/lib/properties'
+import { clipOf, filterOf, maskOf, shadowOf, transformOf } from '@/lib/properties'
 import { ElementContent } from './ElementView'
 import type { BaseProps, Doc, Group, StudioElement, StudioNode } from '@/lib/types'
 
@@ -25,6 +25,34 @@ export function groupStyle(p: BaseProps, origin: string, withEffects: boolean): 
     }
   }
   return style
+}
+
+/**
+ * A laid-out container's own box, drawn behind its children.
+ *
+ * The exported CSS gets this for free — the container is a real flex element
+ * with a background. On the canvas the children sit at solved absolute
+ * coordinates, so giving the wrapper a box too would offset them twice. Painting
+ * a backdrop keeps positioning and painting separate, and the two agree on the
+ * result even though they get there differently.
+ */
+function ContainerBox({ group, props, box }: { group: Group; props: BaseProps; box: { x: number; y: number; w: number; h: number } }) {
+  const pad = group.layout?.padding ?? 0
+  const shadow = shadowOf(props)
+  return (
+    <div
+      className="pointer-events-none absolute"
+      style={{
+        left: box.x - pad,
+        top: box.y - pad,
+        width: box.w + pad * 2,
+        height: box.h + pad * 2,
+        background: String(props.backgroundColor ?? 'transparent'),
+        borderRadius: Number(props.borderRadius ?? 0),
+        ...(shadow ? { boxShadow: shadow } : {}),
+      }}
+    />
+  )
 }
 
 interface SceneNodesProps {
@@ -60,6 +88,7 @@ export function SceneNodes({ doc, time, propsFor, wrapElement }: SceneNodesProps
     const bb = groupBBox(doc, g.id)
     return (
       <div key={g.id} style={groupStyle(read(g), `${bb.x + bb.w / 2}px ${bb.y + bb.h / 2}px`, true)}>
+        {g.layout && <ContainerBox group={g} props={read(g)} box={bb} />}
         {childGroups(doc, g.id).map((child) => renderGroup(child))}
         {elementsOfGroup(doc, g.id).map((el) => (el.visible ? paint(el) : null))}
       </div>

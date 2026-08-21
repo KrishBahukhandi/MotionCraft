@@ -149,6 +149,12 @@ export interface AutoLayout {
   align: 'start' | 'center' | 'end' | 'stretch'
   /** main axis */
   justify: 'start' | 'center' | 'end' | 'between'
+  /**
+   * Let the line break rather than squeezing. Three cards compressed to 79px
+   * are technically laid out and practically unusable; wrapping is what makes a
+   * row survive a phone.
+   */
+  wrap?: boolean
 }
 
 export const DEFAULT_LAYOUT: AutoLayout = {
