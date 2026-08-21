@@ -1,5 +1,5 @@
-import type { AutoLayout, Doc, Group, SizeMode, StudioElement } from './types'
-import { elementsOfGroup, childGroups, groupBBox } from './engine'
+import type { AutoLayout, Doc, Group, SizeMode, StudioElement, StudioNode } from './types'
+import { flowChildren, childGroups, groupBBox, isGroup } from './engine'
 
 /**
  * The auto-layout solver.
@@ -16,8 +16,8 @@ import { elementsOfGroup, childGroups, groupBBox } from './engine'
  * shows; flexbox is what ships.
  */
 
-export function sizeModeOf(el: StudioElement, axis: 'w' | 'h'): SizeMode {
-  return (axis === 'w' ? el.widthMode : el.heightMode) ?? 'fixed'
+export function sizeModeOf(node: StudioNode, axis: 'w' | 'h'): SizeMode {
+  return (axis === 'w' ? node.widthMode : node.heightMode) ?? 'fixed'
 }
 
 /** Content width a `hug` child should take. Text is the only case that guesses. */
@@ -59,7 +59,7 @@ const mainSize = (l: AutoLayout, w: number, h: number) => (l.direction === 'row'
  */
 export function solveGroup(doc: Doc, group: Group): { width: number; height: number } {
   const layout = group.layout
-  const children = elementsOfGroup(doc, group.id)
+  const children = flowChildren(doc, group.id)
   if (!layout || children.length === 0) {
     const bb = groupBBox(doc, group.id)
     return { width: bb.w, height: bb.h }
@@ -68,17 +68,29 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
   const { direction, gap, padding, align, justify } = layout
   const row = direction === 'row'
 
-  // 1. resolve each child's own size
-  const sizes = children.map((el) => {
-    const wMode = sizeModeOf(el, 'w')
-    const hMode = sizeModeOf(el, 'h')
+  /*
+   * 1. resolve each child's own size.
+   *
+   * A sub-group is measured by its bounding box rather than its own x/y,
+   * because a group's coordinates are a transform offset applied to its
+   * subtree, not a position. Placing one therefore means moving it by a delta.
+   */
+  const sizes = children.map((node) => {
+    const el = node as StudioElement
+    const nested = isGroup(node)
+    const bb = nested ? groupBBox(doc, node.id) : null
+    const wMode = sizeModeOf(node, 'w')
+    const hMode = sizeModeOf(node, 'h')
     return {
+      node,
       el,
-      w: wMode === 'hug' ? hugWidth(el) : Number(el.base.width ?? 100),
-      h: Number(el.base.height ?? 100),
+      nested,
+      bb,
+      w: bb ? bb.w : wMode === 'hug' ? hugWidth(el) : Number(el.base.width ?? 100),
+      h: bb ? bb.h : Number(el.base.height ?? 100),
       grows: (row ? wMode : hMode) === 'fill',
       // a child fills the cross axis when the parent aligns stretch and it is not fixed
-      stretches: align === 'stretch' && (row ? hMode : wMode) !== 'fixed',
+      stretches: !nested && align === 'stretch' && (row ? hMode : wMode) !== 'fixed',
     }
   })
 
@@ -104,8 +116,17 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
   else if (justify === 'end') cursor += slack
   else if (justify === 'between' && children.length > 1) between = gap + slack / (children.length - 1)
 
-  const originX = Number(group.base.x ?? 0)
-  const originY = Number(group.base.y ?? 0)
+  /*
+   * Children are laid out from zero, not from the group's x/y.
+   *
+   * A group's coordinates are a transform applied on top of its subtree — the
+   * canvas, groupBBox and the generated CSS all treat them that way. Using them
+   * as a layout origin too counts them twice: the children absorb the offset,
+   * the box moves, the parent re-places the group, and the whole thing
+   * oscillates between two answers on alternating solves.
+   */
+  const originX = 0
+  const originY = 0
 
   for (const s of sizes) {
     if (s.grows) {
@@ -128,14 +149,40 @@ export function solveGroup(doc: Doc, group: Group): { width: number; height: num
 
     const nextX = Math.round(originX + x)
     const nextY = Math.round(originY + y)
-    // Keyframed x/y are absolute coordinates, so moving an element has to move
-    // its animation with it — otherwise switching a group to auto-layout
-    // silently breaks every entrance its children already had.
-    shiftTracks(s.el, nextX - Number(s.el.base.x ?? 0), nextY - Number(s.el.base.y ?? 0))
-    s.el.base.x = nextX
-    s.el.base.y = nextY
-    s.el.base.width = Math.round(s.w)
-    s.el.base.height = Math.round(s.h)
+
+    if (s.nested && s.bb && s.grows) {
+      // a container that took extra width has to lay its own children out again
+      const g = s.node as Group
+      g.base.width = Math.round(s.w)
+      g.base.height = Math.round(s.h)
+      solveGroup(doc, g)
+      s.bb = groupBBox(doc, g.id)
+    }
+
+    if (s.nested && s.bb) {
+      /*
+       * Shift the subtree so its bounding box lands in the slot.
+       *
+       * groupBBox measures the children only — a group's own x/y is a transform
+       * applied on top — so the box currently sits at bb + the group's offset.
+       * Measuring from bb alone re-applies the same delta on every solve, which
+       * is precisely the drift the idempotence check exists to catch.
+       */
+      const g = s.node as Group
+      const dx = nextX - (s.bb.x + Number(g.base.x ?? 0))
+      const dy = nextY - (s.bb.y + Number(g.base.y ?? 0))
+      g.base.x = Math.round(Number(g.base.x ?? 0) + dx)
+      g.base.y = Math.round(Number(g.base.y ?? 0) + dy)
+    } else {
+      // Keyframed x/y are absolute coordinates, so moving an element has to move
+      // its animation with it — otherwise switching a group to auto-layout
+      // silently breaks every entrance its children already had.
+      shiftTracks(s.el, nextX - Number(s.el.base.x ?? 0), nextY - Number(s.el.base.y ?? 0))
+      s.el.base.x = nextX
+      s.el.base.y = nextY
+      s.el.base.width = Math.round(s.w)
+      s.el.base.height = Math.round(s.h)
+    }
 
     cursor += own + between
   }

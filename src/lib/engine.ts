@@ -125,6 +125,21 @@ export function elementsOfGroup(doc: Doc, groupId: string): StudioElement[] {
   return doc.elements.filter((e) => e.groupId === groupId)
 }
 
+/**
+ * A laid-out group's children as one ordered list, elements and sub-groups
+ * together. `flowIndex` decides the order where it is set; otherwise elements
+ * keep their array order and sub-groups follow.
+ */
+export function flowChildren(doc: Doc, groupId: string): StudioNode[] {
+  const els = doc.elements.filter((e) => e.groupId === groupId)
+  const subs = doc.groups.filter((g) => (g.parentId ?? null) === groupId)
+  const items: StudioNode[] = [...els, ...subs]
+  return items
+    .map((node, i) => ({ node, key: node.flowIndex ?? i }))
+    .sort((a, b) => a.key - b.key)
+    .map((x) => x.node)
+}
+
 /** Direct group children of a group (or of the root when parentId is null). */
 export function childGroups(doc: Doc, parentId: string | null): Group[] {
   return doc.groups.filter((g) => (g.parentId ?? null) === parentId)

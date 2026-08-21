@@ -53,6 +53,7 @@ const {
   relayout,
   layoutStylesheet,
   DEFAULT_LAYOUT,
+  slugify,
 } = await import(
   pathToFileURL(path.join(outDir, 'scene-audit-entry.js')).href
 )
@@ -323,9 +324,16 @@ for (const preset of COMPONENT_PRESETS) {
 
     const sheet = layoutStylesheet(doc)
     if (!/display: flex/.test(sheet)) add(t.id, 'no-flex-emitted', 'a laid-out group did not export as flex', 'layout')
-    const groupCls = sheet.split('\n').find((l) => /display: flex/.test(l))
-    if (groupCls && /position: absolute/.test(groupCls)) {
-      add(t.id, 'flex-still-absolute', 'the flex container is still absolutely positioned', 'layout')
+    // A top-level container is legitimately absolute — it *is* the artboard.
+    // The invariant that matters is that a NESTED one is placed by its parent.
+    for (const g of doc.groups) {
+      if (!g.parentId) continue
+      const parent = doc.groups.find((x) => x.id === g.parentId)
+      if (!parent?.layout) continue
+      const rule = sheet.split('\n').find((l) => l.includes(`.${slugify(g.name)} {`))
+      if (rule && /inset: 0/.test(rule)) {
+        add(t.id, 'nested-container-absolute', `"${g.name}" is inside a laid-out parent but still pinned`, 'layout')
+      }
     }
   }
 }

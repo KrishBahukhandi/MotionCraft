@@ -99,7 +99,10 @@ generated code and a note on why it is built that way.
 Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
 on a group — are shown unavailable rather than applied to no effect.
 
-**Auto layout** — dragging a child of a laid-out group reorders it rather than moving it,
+**Auto layout** — containers nest: a pricing row holds three card columns, each laying out
+its own contents, so it exports as a flex row of flex columns and the browser re-solves the
+whole thing. Measured: the same markup gives 272px columns at 960 and 165px at 640, with no
+overflow at either. Dragging a child of a laid-out group reorders it rather than moving it,
 with a line showing where it will land, because a flex container owns its children's
 coordinates and writing them would only be undone on the next solve. A group can lay its
 children out as a flex row or column, with gap,

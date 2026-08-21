@@ -259,8 +259,12 @@ export function generateNodeCss(
 ): NodeCss {
   const animationName = `${className}-anim`
 
-  // a child of a laid-out group is positioned by flexbox, not by coordinates
-  const parent = isGroup(node) ? undefined : doc.groups.find((g) => g.id === node.groupId)
+  // anything inside a laid-out group is positioned by flexbox, not by coordinates
+  const parent = isGroup(node)
+    ? node.parentId
+      ? doc.groups.find((g) => g.id === node.parentId)
+      : undefined
+    : doc.groups.find((g) => g.id === node.groupId)
   const inFlow = !!parent?.layout
   const origin = inFlow ? node.base : null
 
@@ -274,6 +278,13 @@ export function generateNodeCss(
     const bb = groupBBox(doc, node.id)
     if (bb.w > 0) {
       baseDecls['transform-origin'] = `${fmt(bb.x + bb.w / 2)}px ${fmt(bb.y + bb.h / 2)}px`
+    }
+    if (inFlow && bb.w > 0) {
+      // in flow a group is a real box, so it needs a size flex can reason about
+      // — except on an axis it is filling, where flex-basis has to win
+      const row = parent?.layout?.direction === 'row'
+      if (!(row && node.widthMode === 'fill')) baseDecls['width'] = `${fmt(bb.w)}px`
+      if (!(!row && node.heightMode === 'fill')) baseDecls['height'] = `${fmt(bb.h)}px`
     }
   }
   if (inFlow && parent?.layout) {
@@ -504,6 +515,8 @@ export function layoutStylesheet(doc: Doc, prefix = ''): string {
   for (const node of allNodes(doc)) {
     const cls = names.get(node.id)!
     if (isGroup(node)) {
+      const outer = node.parentId ? doc.groups.find((g) => g.id === node.parentId) : undefined
+      const nestedInFlow = !!outer?.layout
       if (node.layout) {
         /*
          * The point of the whole exercise: a laid-out group ships as flexbox,
@@ -511,11 +524,25 @@ export function layoutStylesheet(doc: Doc, prefix = ''): string {
          * than replaying coordinates measured on a 960px artboard.
          */
         const l = node.layout
+        // a nested container is placed by its parent's flex, not by the artboard
+        const flexMode =
+          (outer?.layout?.direction === 'row' ? node.widthMode : node.heightMode) === 'fill'
+            ? 'flex: 1 1 0'
+            : 'flex: 0 0 auto'
+        // min-width:auto is the flexbox default and it stops an item shrinking
+        // below its content, which is what makes a "responsive" row overflow
+        const place = nestedInFlow
+          ? `position: relative; min-width: 0; min-height: 0; ${flexMode}`
+          : 'position: absolute; inset: 0'
         rules.push(
-          `.${cls} { display: flex; flex-direction: ${l.direction}; gap: ${fmt(l.gap)}px; ` +
+          `.${cls} { ${place}; display: flex; flex-direction: ${l.direction}; gap: ${fmt(l.gap)}px; ` +
             `padding: ${fmt(l.padding)}px; align-items: ${ALIGN[l.align]}; ` +
             `justify-content: ${JUSTIFY[l.justify]}; }`
         )
+      } else if (nestedInFlow) {
+        const grows =
+          (outer?.layout?.direction === 'row' ? node.widthMode : node.heightMode) === 'fill'
+        rules.push(`.${cls} { position: relative; min-width: 0; min-height: 0; flex: ${grows ? '1 1 0' : '0 0 auto'}; }`)
       } else {
         rules.push(`.${cls} { position: absolute; inset: 0; }`)
       }
@@ -523,7 +550,7 @@ export function layoutStylesheet(doc: Doc, prefix = ''): string {
       const parent = doc.groups.find((g) => g.id === node.groupId)
       if (parent?.layout) {
         // in flow: the parent places it, so no absolute pinning and no baked offset
-        const decls = ['position: relative', 'margin: 0', 'border: 0']
+        const decls = ['position: relative', 'margin: 0', 'border: 0', 'min-width: 0', 'min-height: 0']
         const wMode = node.widthMode ?? 'fixed'
         const hMode = node.heightMode ?? 'fixed'
         const main = parent.layout.direction === 'row' ? wMode : hMode

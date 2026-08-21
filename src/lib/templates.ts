@@ -1,4 +1,6 @@
-import type { BaseProps, Doc, ElementType, Group, SceneTimeline, StudioElement } from './types'
+import type { AutoLayout, BaseProps, Doc, ElementType, Group, SceneTimeline, StudioElement } from './types'
+import { DEFAULT_LAYOUT } from './types'
+import { relayout } from './layout'
 import { PRESETS, presetTracks } from './presets'
 import { DEFAULT_TRANSITION } from './elements'
 import { uid } from './utils'
@@ -129,6 +131,39 @@ function onScroll(elements: StudioElement[], range: SceneTimeline['range'] = 'en
   for (const el of elements) el.timeline = { driver: 'view', range }
 }
 
+/**
+ * A layout container: a group that lays its children out rather than pinning
+ * them. Children can be elements or other containers, which is what lets a
+ * pricing row hold three card columns rather than twenty-one loose boxes.
+ */
+function container(
+  name: string,
+  layout: Partial<AutoLayout>,
+  children: (StudioElement | Group)[],
+  parentId: string | null = null
+): Group {
+  const g: Group = {
+    id: uid('grp'),
+    name,
+    visible: true,
+    locked: false,
+    open: true,
+    parentId,
+    base: { x: 0, y: 0, opacity: 1, scaleX: 1, scaleY: 1, rotate: 0 },
+    tracks: [],
+    bindings: {},
+    states: [],
+    transition: { ...DEFAULT_TRANSITION },
+    layout: { ...DEFAULT_LAYOUT, ...layout },
+  }
+  children.forEach((child, i) => {
+    child.flowIndex = i
+    if ('type' in child) (child as StudioElement).groupId = g.id
+    else (child as Group).parentId = g.id
+  })
+  return g
+}
+
 function grouped(name: string, elements: StudioElement[]): Group {
   const g: Group = {
     id: uid('grp'),
@@ -206,42 +241,62 @@ function heroLaunch(): Doc {
   return scene('Hero — Launch', 960, 480, Math.max(end1, end2, end3), [...copy, ...panelBits, glow], [g])
 }
 
-/** Three pricing cards, the middle one carrying the emphasis. */
+/**
+ * Three pricing cards, the middle one carrying the emphasis.
+ *
+ * Rebuilt on containers: a row holding three columns, each column holding its
+ * own contents. That nesting is what makes it survive a narrow screen — the row
+ * exports as a flex row of three flex columns, so the browser re-solves it
+ * instead of replaying coordinates measured at 960px.
+ */
 function pricingThree(): Doc {
-  const els: StudioElement[] = []
+  const columns: Group[] = []
+  const all: StudioElement[] = []
   const plans = [
-    { name: 'Starter', price: '$0', x: 64, featured: false },
-    { name: 'Pro', price: '$12', x: 344, featured: true },
-    { name: 'Team', price: '$40', x: 624, featured: false },
+    { name: 'Starter', price: '$0', featured: false },
+    { name: 'Pro', price: '$12', featured: true },
+    { name: 'Team', price: '$40', featured: false },
   ]
+
   for (const p of plans) {
-    const card = lift(box(`${p.name} Card`, {
-      x: p.x, y: p.featured ? 76 : 96, width: 272, height: p.featured ? 300 : 268,
-      backgroundColor: p.featured ? C.surfaceLift : C.surface, borderRadius: R.card,
-      shadowY: p.featured ? 18 : 8, shadowBlur: p.featured ? 44 : 24, shadowColor: '#00000066',
-    }), -6)
-    const title = text(`${p.name} Name`, p.name, {
-      x: p.x + 28, y: (p.featured ? 76 : 96) + 28, width: 200, fontSize: 15, color: C.mute, fontWeight: 600,
-    })
-    const price = text(`${p.name} Price`, p.price, {
-      x: p.x + 28, y: (p.featured ? 76 : 96) + 58, width: 200, height: 46, fontSize: 40, fontWeight: 800,
-    })
-    const l1 = box(`${p.name} Line 1`, { x: p.x + 28, y: (p.featured ? 76 : 96) + 126, width: 180, height: 9, backgroundColor: C.line, borderRadius: R.pill })
-    const l2 = box(`${p.name} Line 2`, { x: p.x + 28, y: (p.featured ? 76 : 96) + 148, width: 148, height: 9, backgroundColor: C.line, borderRadius: R.pill })
-    const l3 = box(`${p.name} Line 3`, { x: p.x + 28, y: (p.featured ? 76 : 96) + 170, width: 164, height: 9, backgroundColor: C.line, borderRadius: R.pill })
-    const cta = lift(button(`${p.name} CTA`, p.featured ? 'Start free' : 'Choose', {
-      x: p.x + 28, y: (p.featured ? 76 : 96) + (p.featured ? 216 : 196), width: 216,
-      backgroundColor: p.featured ? C.accent : C.surfaceLift, color: p.featured ? C.white : C.ink,
-    }), -3, p.featured ? C.accentSoft : C.line)
-    els.push(card, title, price, l1, l2, l3, cta)
+    const title = text(`${p.name} Name`, p.name, { width: 216, height: 22, fontSize: 15, color: C.mute, fontWeight: 600 })
+    const price = text(`${p.name} Price`, p.price, { width: 216, height: 46, fontSize: 40, fontWeight: 800 })
+    const l1 = box(`${p.name} Line 1`, { width: 180, height: 9, backgroundColor: C.line, borderRadius: R.pill })
+    const l2 = box(`${p.name} Line 2`, { width: 148, height: 9, backgroundColor: C.line, borderRadius: R.pill })
+    const l3 = box(`${p.name} Line 3`, { width: 164, height: 9, backgroundColor: C.line, borderRadius: R.pill })
+    const cta = lift(
+      button(`${p.name} CTA`, p.featured ? 'Start free' : 'Choose', {
+        width: 216,
+        backgroundColor: p.featured ? C.accent : C.surfaceLift,
+        color: p.featured ? C.white : C.ink,
+      }),
+      -3,
+      p.featured ? C.accentSoft : C.line
+    )
+    for (const k of [title, price, cta]) k.widthMode = 'fill'
+    const kids = [title, price, l1, l2, l3, cta]
+    all.push(...kids)
+    const col = container(`${p.name} Card`, { direction: 'column', gap: 14, padding: 28, align: 'stretch' }, kids)
+    col.base.backgroundColor = p.featured ? C.surfaceLift : C.surface
+    // the three columns share the row rather than overflowing it
+    col.widthMode = 'fill'
+    columns.push(col)
   }
-  // card first, contents just behind it, so each column assembles as a unit
-  const cards = els.filter((e) => e.name.endsWith('Card'))
-  const rest = els.filter((e) => !e.name.endsWith('Card'))
-  const a = stagger(cards, 'pop-in', 110, 0)
-  const b = stagger(rest, 'fade-in', 26, 160)
-  const g = grouped('Pricing', els)
-  return scene('Pricing — Three Plans', 960, 480, Math.max(a, b), els, [g])
+
+  // a laid-out root fills the artboard; translating it would just push the
+  // whole thing off the edge, and on a real page nothing would translate it
+  const row = container(
+    'Pricing',
+    { direction: 'row', gap: 24, padding: 48, align: 'center' },
+    columns
+  )
+
+  const a = stagger(all.filter((e) => e.name.endsWith('CTA') || e.name.includes('Price') || e.name.includes('Name')), 'fade-in-up', 60, 0)
+  const b = stagger(all.filter((e) => e.name.includes('Line')), 'fade-in', 30, 180)
+
+  const doc = scene('Pricing — Three Plans', 960, 480, Math.max(a, b), all, [row, ...columns])
+  relayout(doc)
+  return doc
 }
 
 /** Six feature tiles arriving as a wave. */

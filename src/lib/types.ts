@@ -8,6 +8,13 @@ export type ElementType =
   | 'svg'
   | 'path'
 
+/**
+ * How a child is sized along an axis, in the vocabulary every visual editor
+ * uses: `fixed` keeps its number, `fill` takes the leftover space, `hug`
+ * shrinks to its own content.
+ */
+export type SizeMode = 'fixed' | 'fill' | 'hug'
+
 export interface Keyframe {
   id: string
   /** time in ms */
@@ -100,23 +107,27 @@ export interface NodeBase {
    * document created before scroll timelines existed meant.
    */
   timeline?: SceneTimeline
+  /**
+   * Position among a laid-out parent's children. Elements and groups live in
+   * separate arrays, so without an explicit index a container holding both has
+   * no defined order — and would silently lay them out in whatever order the
+   * arrays happened to be in.
+   */
+  flowIndex?: number
+  /**
+   * How this node is sized inside a laid-out parent. On a group as well as an
+   * element: a row of three cards that cannot share the width is a row of three
+   * cards that overflows.
+   */
+  widthMode?: SizeMode
+  heightMode?: SizeMode
 }
 
 export interface StudioElement extends NodeBase {
   type: ElementType
   /** id of the owning group, or null when top-level */
   groupId: string | null
-  /** how this child is sized inside a laid-out parent; defaults to fixed */
-  widthMode?: SizeMode
-  heightMode?: SizeMode
 }
-
-/**
- * How a child is sized along an axis, in the vocabulary every visual editor
- * uses: `fixed` keeps its number, `fill` takes the leftover space, `hug`
- * shrinks to its own content.
- */
-export type SizeMode = 'fixed' | 'fill' | 'hug'
 
 /**
  * Flow layout on a group.
