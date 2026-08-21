@@ -26,6 +26,40 @@ interface Guide {
   pos: number
 }
 
+/** Where a dragged child would land inside its laid-out parent. */
+interface DropHint {
+  x: number
+  y: number
+  w: number
+  h: number
+  index: number
+}
+
+/**
+ * Which slot the pointer is over, among a laid-out group's children.
+ *
+ * Counting the siblings whose midpoint the pointer has passed gives the index
+ * directly, and skipping the dragged element keeps the arithmetic honest when
+ * it moves backwards past its own slot.
+ */
+function slotUnder(
+  siblings: StudioElement[],
+  draggedId: string,
+  row: boolean,
+  px: number,
+  py: number
+): number {
+  let index = 0
+  for (const sib of siblings) {
+    if (sib.id === draggedId) continue
+    const mid = row
+      ? Number(sib.base.x ?? 0) + Number(sib.base.width ?? 0) / 2
+      : Number(sib.base.y ?? 0) + Number(sib.base.height ?? 0) / 2
+    if ((row ? px : py) > mid) index++
+  }
+  return index
+}
+
 interface Marquee {
   x0: number
   y0: number
@@ -75,6 +109,7 @@ export function CanvasStage() {
   const [spaceDown, setSpaceDown] = useState(false)
   const [guides, setGuides] = useState<Guide[]>([])
   const [marquee, setMarquee] = useState<Marquee | null>(null)
+  const [dropHint, setDropHint] = useState<DropHint | null>(null)
   const fitted = useRef(false)
 
   // center artboard on first mount (retry until the container has been laid out)
@@ -254,6 +289,18 @@ export function CanvasStage() {
       .filter((m): m is NonNullable<typeof m> => m !== null)
     if (moving.length === 0) return
 
+    /*
+     * A child of a laid-out group has no coordinates of its own to drag — the
+     * solver owns them, and writing x/y would just be undone on the next solve.
+     * Dragging reorders it instead, which is the only move that means anything
+     * inside a flex container.
+     */
+    const primary = st.doc.elements.find((x) => x.id === targetId)
+    const laidOutParent = primary
+      ? st.doc.groups.find((g) => g.id === primary.groupId && g.layout)
+      : undefined
+    let dropIndex: number | null = null
+
     let started = false
     const move = (ev: PointerEvent) => {
       const p = toWorld(ev.clientX, ev.clientY)
@@ -305,6 +352,37 @@ export function CanvasStage() {
       setGuides(g)
 
       const stt = useStudio.getState()
+
+      if (laidOutParent && primary) {
+        const row = laidOutParent.layout!.direction === 'row'
+        const siblings = elementsOfGroup(stt.doc, laidOutParent.id)
+        dropIndex = slotUnder(siblings, primary.id, row, p.x, p.y)
+        const others = siblings.filter((sib) => sib.id !== primary.id)
+        const before = others[dropIndex - 1]
+        const after = others[dropIndex]
+        const gap = laidOutParent.layout!.gap
+        // draw the line in the space the element would drop into
+        const pos = after
+          ? Number(after.base[row ? 'x' : 'y'] ?? 0) - gap / 2
+          : before
+            ? Number(before.base[row ? 'x' : 'y'] ?? 0) +
+              Number(before.base[row ? 'width' : 'height'] ?? 0) +
+              gap / 2
+            : Number(laidOutParent.base[row ? 'x' : 'y'] ?? 0) + laidOutParent.layout!.padding
+        const cross = Number(laidOutParent.base[row ? 'y' : 'x'] ?? 0) + laidOutParent.layout!.padding
+        const crossLen = Math.max(
+          40,
+          Number(laidOutParent.base[row ? 'height' : 'width'] ?? 0) - laidOutParent.layout!.padding * 2
+        )
+        setDropHint(
+          row
+            ? { x: pos - 1, y: cross, w: 2, h: crossLen, index: dropIndex }
+            : { x: cross, y: pos - 1, w: crossLen, h: 2, index: dropIndex }
+        )
+        setGuides([])
+        return
+      }
+
       for (const m of moving) {
         // nodes inside transformed groups need the delta in their local space
         const [ldx, ldy] = m.chain.length ? intoLocalSpace(dx, dy, m.chain) : [dx, dy]
@@ -314,6 +392,10 @@ export function CanvasStage() {
     }
     const up = () => {
       setGuides([])
+      setDropHint(null)
+      if (laidOutParent && primary && dropIndex !== null) {
+        useStudio.getState().reorderInGroup(primary.id, dropIndex)
+      }
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
@@ -547,6 +629,20 @@ export function CanvasStage() {
           {ungroupedElements(doc)
             .filter((el) => el.visible && selection.includes(el.id))
             .map(elementOverlay)}
+
+          {/* where a reordered child would land */}
+          {dropHint && (
+            <div
+              className="pointer-events-none absolute rounded-full bg-accent2"
+              style={{
+                left: dropHint.x,
+                top: dropHint.y,
+                width: dropHint.w,
+                height: dropHint.h,
+                boxShadow: `0 0 0 ${2 / z}px rgb(var(--mc-accent2) / 0.25)`,
+              }}
+            />
+          )}
 
           {/* smart guides */}
           {guides.map((g, i) =>

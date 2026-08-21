@@ -99,7 +99,10 @@ generated code and a note on why it is built that way.
 Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
 on a group — are shown unavailable rather than applied to no effect.
 
-**Auto layout** — a group can lay its children out as a flex row or column, with gap,
+**Auto layout** — dragging a child of a laid-out group reorders it rather than moving it,
+with a line showing where it will land, because a flex container owns its children's
+coordinates and writing them would only be undone on the next solve. A group can lay its
+children out as a flex row or column, with gap,
 padding and alignment, and children sized fixed / fill / hug. It exports as
 `display: flex` rather than absolute positions, so the scene reflows at whatever width
 the real page is instead of replaying coordinates measured on a 960px artboard. The solver

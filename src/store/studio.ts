@@ -183,6 +183,8 @@ export interface StudioState {
   setGroupLayout: (groupId: string, patch: Partial<AutoLayout> | null) => void
   /** How a child is sized inside a laid-out parent. */
   setSizeMode: (elementId: string, axis: 'w' | 'h', mode: SizeMode) => void
+  /** Move a child to a new position among its siblings inside a laid-out group. */
+  reorderInGroup: (elementId: string, toIndex: number) => void
   /** which state the canvas previews and property edits write into */
   setEditingState: (ref: { nodeId: string; stateId: string } | null) => void
 
@@ -763,6 +765,36 @@ export const useStudio = create<StudioState>()(
         if (!el) return
         if (axis === 'w') el.widthMode = mode
         else el.heightMode = mode
+        relayout(s.doc)
+      })
+    },
+
+    reorderInGroup: (elementId, toIndex) => {
+      const st = get()
+      const el = st.doc.elements.find((x) => x.id === elementId)
+      if (!el) return
+      const siblings = st.doc.elements.filter((x) => x.groupId === el.groupId)
+      const from = siblings.findIndex((x) => x.id === elementId)
+      const to = Math.max(0, Math.min(siblings.length - 1, toIndex))
+      if (from === to || from < 0) return
+
+      get().pushHistory()
+      set((s) => {
+        const all = s.doc.elements
+        const flatFrom = all.findIndex((x) => x.id === elementId)
+        const [moved] = all.splice(flatFrom, 1)
+        // reposition against the siblings as they stand after the removal
+        // Reposition against the siblings as they stand after the removal, and
+        // stay inside the sibling block — appending to the whole array would
+        // drop the element past some other group's elements.
+        const rest = all.filter((x) => x.groupId === moved.groupId)
+        const at =
+          to < rest.length
+            ? all.indexOf(rest[to])
+            : rest.length > 0
+              ? all.indexOf(rest[rest.length - 1]) + 1
+              : all.length
+        all.splice(at, 0, moved)
         relayout(s.doc)
       })
     },
