@@ -136,7 +136,8 @@ export function Landing() {
             <span className="text-[15px] font-bold tracking-tight">MotionCraft</span>
           </div>
           <div className="ml-auto hidden items-center gap-6 text-[13.5px] font-medium text-mute md:flex">
-            <a href="#features" className="transition-colors hover:text-ink">Features</a>
+            <Link to="/gallery" className="transition-colors hover:text-ink">Gallery</Link>
+          <a href="#features" className="transition-colors hover:text-ink">Features</a>
             <a href="#code" className="transition-colors hover:text-ink">Code</a>
             <a href="#compare" className="transition-colors hover:text-ink">Compare</a>
             <a href="#faq" className="transition-colors hover:text-ink">FAQ</a>
@@ -486,6 +487,7 @@ export function Landing() {
             <span>· The CSS Animation Studio</span>
           </div>
           <div className="flex items-center gap-5">
+            <Link to="/gallery" className="transition-colors hover:text-ink">Gallery</Link>
             <a href="#features" className="transition-colors hover:text-ink">Features</a>
             <a href="#faq" className="transition-colors hover:text-ink">FAQ</a>
             <Link to="/studio" className="transition-colors hover:text-ink">Studio</Link>

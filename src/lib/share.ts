@@ -81,9 +81,23 @@ export async function decodeDoc(payload: string): Promise<Doc | null> {
   }
 }
 
-export function buildShareUrl(payload: string, origin?: string): string {
+export function buildShareUrl(payload: string, origin?: string, formatId?: string): string {
   const base = origin ?? `${location.origin}`
-  return `${base}/studio#s=${payload}`
+  // `f` rides in the fragment with the scene, so it is never sent to a server
+  // either. Omitted when it is the default, to keep shared links tidy.
+  const hint = formatId && formatId !== 'css' ? `&f=${encodeURIComponent(formatId)}` : ''
+  return `${base}/studio#s=${payload}${hint}`
+}
+
+/**
+ * Export format the link asks the code panel to open on.
+ *
+ * Someone arriving from the Tailwind page has already told us what they want;
+ * making them find it again in a twelve-item dropdown is a wasted step.
+ */
+export function readFormatHint(hash = location.hash): string | null {
+  if (!hash || hash.length < 2) return null
+  return new URLSearchParams(hash.replace(/^#/, '')).get('f')
 }
 
 /** Pull a scene payload out of the current location, if present. */

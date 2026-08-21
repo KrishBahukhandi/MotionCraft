@@ -55,11 +55,14 @@ function scheduleSave(doc: Doc) {
     return
   }
   if (saveTimer) clearTimeout(saveTimer)
+  useStudio.setState({ saveState: 'saving' })
   saveTimer = setTimeout(() => {
     try {
       localStorage.setItem(STORAGE_KEY, json)
+      useStudio.setState({ saveState: 'saved', savedAt: Date.now() })
     } catch {
-      // storage full or unavailable — ignore
+      // storage full or unavailable — the indicator stays on its last good state
+      useStudio.setState({ saveState: 'idle' })
     }
   }, 400)
 }
@@ -100,6 +103,18 @@ export interface StudioState {
   shareOpen: boolean
   /** state being previewed/edited on the canvas, if any */
   editingState: { nodeId: string; stateId: string } | null
+
+  /**
+   * Autosave status, so the UI can say the work is safe. Nothing here is sent
+   * anywhere — with no account to fall back on, the only reassurance a visitor
+   * gets that their scene survives a refresh is being told.
+   */
+  saveState: 'idle' | 'saving' | 'saved'
+  savedAt: number | null
+
+  /** export format the code panel is showing; set from a share link's `f=` */
+  exportFormat: string
+  setExportFormat: (id: string) => void
 
   // history
   past: Doc[]
@@ -224,6 +239,11 @@ export const useStudio = create<StudioState>()(
     importOpen: false,
     shareOpen: false,
     editingState: null,
+
+    saveState: 'idle',
+    savedAt: null,
+    exportFormat: 'css',
+    setExportFormat: (id) => set((s) => { s.exportFormat = id }),
 
     past: [],
     future: [],

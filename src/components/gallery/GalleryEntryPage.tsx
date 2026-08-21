@@ -19,22 +19,30 @@ export function galleryEntryTitle(entry: GalleryEntry): string {
  * the anchor starts as a plain /studio link and upgrades once ready — it is a
  * real href either way, which keeps it crawlable and usable without JS.
  */
-function useStudioLink(entry: GalleryEntry): string {
+function useStudioLink(entry: GalleryEntry, formatId = 'css'): string {
   const [href, setHref] = useState('/studio')
   useEffect(() => {
     let cancelled = false
     encodeDoc(entry.build()).then((payload) => {
-      if (!cancelled) setHref(buildShareUrl(payload, ''))
+      // the format they are already reading is the one to open on
+      if (!cancelled) setHref(buildShareUrl(payload, '', formatId))
     })
     return () => {
       cancelled = true
     }
-  }, [entry])
+  }, [entry, formatId])
   return href
 }
 
-function CodeSection({ entry }: { entry: GalleryEntry }) {
-  const [formatId, setFormatId] = useState('css')
+function CodeSection({
+  entry,
+  formatId,
+  setFormatId,
+}: {
+  entry: GalleryEntry
+  formatId: string
+  setFormatId: (id: string) => void
+}) {
   const [copied, setCopied] = useState(false)
   const format = getFormat(formatId)
   const code = useMemo(
@@ -78,7 +86,9 @@ function CodeSection({ entry }: { entry: GalleryEntry }) {
 
 export function GalleryEntryPage() {
   const entry = findGalleryEntry(useParams().slug)
-  const studioHref = useStudioLink(entry ?? ({ build: () => null } as never))
+  // lifted so "Edit in Studio" opens on whatever format is on screen
+  const [formatId, setFormatId] = useState('css')
+  const studioHref = useStudioLink(entry ?? ({ build: () => null } as never), formatId)
 
   if (!entry) {
     return (
@@ -152,7 +162,7 @@ export function GalleryEntryPage() {
           </div>
 
           <div className="min-w-0">
-            <CodeSection entry={entry} />
+            <CodeSection entry={entry} formatId={formatId} setFormatId={setFormatId} />
           </div>
         </div>
 

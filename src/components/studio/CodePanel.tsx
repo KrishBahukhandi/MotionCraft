@@ -8,7 +8,9 @@ import { Button, Select } from '@/components/ui/primitives'
 
 export function CodePanel() {
   const doc = useStudio((s) => s.doc)
-  const [formatId, setFormatId] = useState('css')
+  // in the store so a share link can choose the format before this mounts
+  const formatId = useStudio((s) => s.exportFormat)
+  const setFormatId = useStudio((s) => s.setExportFormat)
   const [loop, setLoop] = useState(true)
   const [minify, setMinify] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(true)

@@ -36,8 +36,14 @@ export function GalleryIndex() {
             <span className="text-[14px] font-bold">MotionCraft</span>
           </Link>
           <Link
+            to="/"
+            className="ml-auto text-[13px] font-medium text-mute transition-colors hover:text-ink"
+          >
+            Home
+          </Link>
+          <Link
             to="/studio"
-            className="ml-auto rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+            className="ml-5 rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110"
           >
             Open Studio
           </Link>

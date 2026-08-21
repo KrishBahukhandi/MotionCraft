@@ -27,6 +27,8 @@ export type SeoPage = {
    */
   featured: string
   related: string[]
+  /** export format this page is about; the studio opens on it */
+  format?: string
 }
 
 export const SEO_PAGES: SeoPage[] = [
@@ -77,6 +79,7 @@ export const SEO_PAGES: SeoPage[] = [
   },
   {
     slug: 'tailwind-animation-generator',
+    format: 'tailwind4',
     featured: 'button-hover-effect',
     related: ['card-hover-lift', 'button-press-animation', 'accessible-focus-ring'],
     title: 'Tailwind CSS Animation Generator — Visual Keyframes | MotionCraft',
@@ -112,23 +115,25 @@ export const SEO_PAGES: SeoPage[] = [
  * The working example each page leads with: a running animation, its real CSS,
  * and a link that opens the same scene in the editor.
  */
-function LiveExample({ entry }: { entry: GalleryEntry }) {
+function LiveExample({ entry, formatId = 'css' }: { entry: GalleryEntry; formatId?: string }) {
   const [copied, setCopied] = useState(false)
   const [studioHref, setStudioHref] = useState('/studio')
+  const format = getFormat(formatId)
   const code = useMemo(
-    () => getFormat('css').generate(entry.build(), { loop: true, reducedMotion: true, minify: false }),
-    [entry]
+    () => format.generate(entry.build(), { loop: true, reducedMotion: true, minify: false }),
+    [entry, format]
   )
 
   useEffect(() => {
     let cancelled = false
     encodeDoc(entry.build()).then((payload) => {
-      if (!cancelled) setStudioHref(buildShareUrl(payload, ''))
+      // a visitor on the Tailwind page wants Tailwind, not the CSS default
+      if (!cancelled) setStudioHref(buildShareUrl(payload, '', formatId))
     })
     return () => {
       cancelled = true
     }
-  }, [entry])
+  }, [entry, formatId])
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -163,10 +168,10 @@ function LiveExample({ entry }: { entry: GalleryEntry }) {
             className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/[0.08] px-3 text-[12px] font-medium text-white/90 transition-colors hover:bg-white/[0.14]"
           >
             {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
-            {copied ? 'Copied' : 'Copy CSS'}
+            {copied ? 'Copied' : `Copy ${format.label}`}
           </button>
         </div>
-        <CodeBlock code={code} language="css" className="max-h-[340px] !rounded-none" />
+        <CodeBlock code={code} language={format.language ?? 'css'} className="max-h-[340px] !rounded-none" />
       </div>
     </div>
   )
@@ -189,18 +194,18 @@ export function SeoLandingPage() {
     <main className="min-h-screen bg-bg text-ink">
       <Seo title={page.title} description={page.description} path={`/${page.slug}`} />
       <nav className="border-b border-edge/[0.07] bg-bg/90">
-        <div className="mx-auto flex h-16 max-w-6xl items-center px-5"><Link to="/" className="flex items-center gap-2"><Logo size={26} /><span className="font-bold">MotionCraft</span></Link><Link to="/studio" className="ml-auto rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Launch Studio</Link></div>
+        <div className="mx-auto flex h-16 max-w-6xl items-center px-5"><Link to="/" className="flex items-center gap-2"><Logo size={26} /><span className="font-bold">MotionCraft</span></Link><Link to="/gallery" className="ml-auto text-[13px] font-medium text-mute transition-colors hover:text-ink">Gallery</Link><Link to="/studio" className="ml-5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white">Launch Studio</Link></div>
       </nav>
       <section className="mc-hero-glow px-5 py-20 md:py-28"><div className="mx-auto max-w-3xl text-center"><p className="mb-4 inline-flex items-center gap-2 rounded-full border border-edge/10 bg-panel px-3 py-1.5 text-sm text-mute"><Sparkles size={14} className="text-accent" /> Free, local and no login</p><h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">{page.h1}</h1><p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-mute">{page.intro}</p><Link to="/studio" className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-semibold text-white">Create an animation <ArrowRight size={17} /></Link></div></section>
       {featured && (
         <section className="mx-auto max-w-6xl px-5 py-14">
           <h2 className="text-3xl font-bold">Try it right here</h2>
           <p className="mt-3 max-w-2xl leading-relaxed text-mute">
-            A working example with the exact CSS it produces. Copy it, or open it in the editor and
+            A working example with the exact code it produces. Copy it, or open it in the editor and
             change anything.
           </p>
           <div className="mt-8">
-            <LiveExample entry={featured} />
+            <LiveExample entry={featured} formatId={page.format} />
           </div>
           <div className="mt-8 rounded-2xl border border-edge/10 bg-panel p-6">
             <h3 className="flex items-center gap-2 text-[15px] font-semibold">

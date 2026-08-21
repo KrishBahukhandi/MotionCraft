@@ -12,8 +12,9 @@ A browser-based **CSS animation studio** for frontend work. Design on a Figma-st
 refine on an After Effects-style timeline, and export production-ready code — or paste the
 animation CSS you already have and edit it visually.
 
-**No login. No backend. Everything stays local.** Scenes autosave to `localStorage`, and
-sharing packs the whole scene into the link itself.
+**No login. No backend. Everything stays local.** Scenes autosave to `localStorage` — the
+header says so, because with no account to fall back on the only reassurance is being told —
+and sharing packs the whole scene into the link itself.
 
 ## Run it
 
@@ -55,7 +56,8 @@ states are carried into every one; for Tailwind they become variant utilities
 
 **Share links** — the scene is compressed into the URL fragment, the part browsers never
 send to a server. Nothing is uploaded, links do not expire, and opening one leaves the
-recipient's own work a single undo away.
+recipient's own work a single undo away. A link may also name an export
+format, so arriving from the Tailwind page opens the code panel on Tailwind.
 
 ### Authoring
 

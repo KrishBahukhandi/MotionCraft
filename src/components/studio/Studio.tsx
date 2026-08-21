@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  Check,
   Circle,
   Code2,
+  Loader2,
   CreditCard,
   Image,
   Layers,
@@ -43,7 +45,7 @@ import { ShareDialog } from './ShareDialog'
 import { IconButton, Tabs, ToastHost } from '@/components/ui/primitives'
 import { Logo } from '@/components/ui/Logo'
 import { Seo } from '@/components/Seo'
-import { clearShareHash, decodeDoc, readSharePayload } from '@/lib/share'
+import { clearShareHash, decodeDoc, readFormatHint, readSharePayload } from '@/lib/share'
 import { toast } from '@/components/ui/primitives'
 
 const STUDIO_TITLE = 'Studio — Visual CSS Animation Editor | MotionCraft'
@@ -85,6 +87,7 @@ export function Studio() {
     const adopt = () => {
       const payload = readSharePayload()
       if (!payload) return
+      const format = readFormatHint()
       decodeDoc(payload).then((shared) => {
         if (cancelled) return
         if (!shared) {
@@ -93,6 +96,8 @@ export function Studio() {
           return
         }
         useStudio.getState().loadSharedDoc(shared)
+        // arriving from a page about one format? open on that one
+        if (format) useStudio.getState().setExportFormat(format)
         // the scene is autosaved by now, so drop the payload from the address bar
         clearShareHash()
         toast('Opened shared scene — ⌘Z returns to your work')
@@ -145,7 +150,10 @@ export function Studio() {
           <kbd className="rounded border border-edge/15 px-1 font-mono text-[10px]">⌘K</kbd>
         </button>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto" />
+        <SaveStatus />
+
+        <div className="flex items-center gap-1">
           <IconButton
             title={deviceOn ? 'Back to canvas' : 'Device preview'}
             active={deviceOn}
@@ -254,6 +262,48 @@ export function Studio() {
       <ImportDialog />
       <ShareDialog />
     </div>
+    </div>
+  )
+}
+
+/**
+ * "Saved to this browser" — the only reassurance on offer.
+ *
+ * There is no account and no server copy, so a visitor has no way to tell
+ * whether closing the tab loses the work. Saying it plainly, and saying where
+ * it went, is the whole point: local is a feature, but only if it is visible.
+ */
+function SaveStatus() {
+  const saveState = useStudio((s) => s.saveState)
+  const savedAt = useStudio((s) => s.savedAt)
+  const [, tick] = useState(0)
+
+  // re-render on a slow beat so "2 min ago" does not go stale while idle
+  useEffect(() => {
+    if (!savedAt) return
+    const id = setInterval(() => tick((n) => n + 1), 30000)
+    return () => clearInterval(id)
+  }, [savedAt])
+
+  if (saveState === 'idle' && !savedAt) return null
+
+  const saving = saveState === 'saving'
+  const mins = savedAt ? Math.floor((Date.now() - savedAt) / 60000) : 0
+  const when = saving ? 'Saving…' : mins < 1 ? 'Saved' : mins === 1 ? 'Saved 1 min ago' : `Saved ${mins} min ago`
+
+  return (
+    <div
+      className="mr-2 hidden items-center gap-1.5 text-[11.5px] text-mute md:flex"
+      title="Your scene is stored in this browser only — never uploaded"
+      aria-live="polite"
+    >
+      {saving ? (
+        <Loader2 size={12} className="animate-spin text-mute" />
+      ) : (
+        <Check size={12} className="text-green-500/80" />
+      )}
+      <span>{when}</span>
+      <span className="hidden text-mute/60 lg:inline">{'\u00A0'}&middot; on this device</span>
     </div>
   )
 }
