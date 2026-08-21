@@ -1,4 +1,4 @@
-import type { BaseProps, Doc, ElementType, Group, StudioElement } from './types'
+import type { BaseProps, Doc, ElementType, Group, SceneTimeline, StudioElement } from './types'
 import { PRESETS, presetTracks } from './presets'
 import { DEFAULT_TRANSITION } from './elements'
 import { uid } from './utils'
@@ -14,7 +14,7 @@ import { uid } from './utils'
  * is tedious to build by hand, because it is not one animation but a dozen
  * offset against each other.
  */
-export type TemplateCategory = 'Hero' | 'Marketing' | 'Commerce' | 'App UI' | 'Feedback'
+export type TemplateCategory = 'Hero' | 'Marketing' | 'Scroll' | 'Commerce' | 'App UI' | 'Feedback'
 
 export interface Template {
   id: string
@@ -122,6 +122,11 @@ function stagger(elements: StudioElement[], presetId: string, step = 70, start =
     if (preset.base) Object.assign(el.base, preset.base)
   })
   return start + (elements.length - 1) * step + preset.duration
+}
+
+/** Drive these nodes from scroll position rather than the clock. */
+function onScroll(elements: StudioElement[], range: SceneTimeline['range'] = 'enter') {
+  for (const el of elements) el.timeline = { driver: 'view', range }
 }
 
 function grouped(name: string, elements: StudioElement[]): Group {
@@ -394,7 +399,36 @@ function loadingScreen(): Doc {
   return scene('Feedback — Loading Screen', 960, 480, Math.max(intro, breathe.duration), els, [g])
 }
 
-export const TEMPLATE_CATEGORIES: TemplateCategory[] = ['Hero', 'Marketing', 'Commerce', 'App UI', 'Feedback']
+/** A section that reveals itself as the reader scrolls to it. */
+function scrollReveal(): Doc {
+  const heading = text('Section Heading', 'Built for the scroll', {
+    x: 64, y: 96, width: 520, height: 44, fontSize: 38, fontWeight: 800,
+  })
+  const sub = text('Section Sub', 'Each block arrives as it reaches the viewport.', {
+    x: 64, y: 150, width: 520, fontSize: 17, color: C.mute,
+  })
+  const rows: StudioElement[] = []
+  for (let i = 0; i < 3; i++) {
+    const y = 208 + i * 88
+    rows.push(box(`Row ${i + 1}`, { x: 64, y, width: 560, height: 72, backgroundColor: C.surface, borderRadius: R.card }))
+    rows.push(box(`Row ${i + 1} Mark`, { x: 88, y: y + 20, width: 32, height: 32, backgroundColor: i % 2 ? C.cyan : C.accent, borderRadius: R.chip }))
+    rows.push(box(`Row ${i + 1} Line`, { x: 136, y: y + 26, width: 300, height: 10, backgroundColor: C.line, borderRadius: R.pill }))
+  }
+  const aside = box('Aside', { x: 664, y: 96, width: 232, height: 272, backgroundColor: C.surfaceLift, borderRadius: R.card })
+
+  const copy = [heading, sub]
+  const a = stagger(copy, 'fade-in-up', 90, 0)
+  const b = stagger(rows, 'fade-in-up', 40, 120)
+  const c = stagger([aside], 'fade-in-right', 0, 200)
+
+  const els = [...copy, ...rows, aside]
+  // the whole point of this one: scroll advances it, not a timer
+  onScroll(els, 'enter')
+  const g = grouped('Scroll Section', els)
+  return scene('Scroll — Reveal Section', 960, 480, Math.max(a, b, c), els, [g])
+}
+
+export const TEMPLATE_CATEGORIES: TemplateCategory[] = ['Hero', 'Marketing', 'Scroll', 'Commerce', 'App UI', 'Feedback']
 
 export const TEMPLATES: Template[] = [
   {
@@ -459,6 +493,13 @@ export const TEMPLATES: Template[] = [
     tags: ['ecommerce', 'product', 'card', 'hover'],
     note: 'The entrance is a keyframe animation and the hover is a transition, which is the split that matters: an entrance plays once on load, a hover has to be interruptible halfway through and reverse cleanly.',
     build: productCard,
+  },
+  {
+    id: 'scroll-reveal', slug: 'scroll-reveal-animation', name: 'Scroll Reveal Section', category: 'Scroll',
+    description: 'A section whose blocks arrive as the reader scrolls to them — no JavaScript.',
+    tags: ['scroll', 'reveal', 'animation-timeline', 'stagger'],
+    note: 'Driven by animation-timeline: view() rather than a timer, so the motion follows the reader instead of firing once on load and being missed. The whole scroll-reveal category of JavaScript libraries exists to do this; CSS now does it natively, with no observer and no scroll listener. Browsers without it play the same animation on load, which is why the fallback matters more than the effect — a scroll-driven fade with no fallback leaves the content invisible.',
+    build: scrollReveal,
   },
   {
     id: 'loading-screen', slug: 'loading-screen-animation', name: 'Loading Screen', category: 'Feedback',

@@ -1,5 +1,6 @@
 import type { BaseProps, NodeState, StudioNode, TransitionTiming, TriggerKind } from './types'
 import { cssDecls } from './properties'
+import type { SceneTimeline } from './types'
 import { transitionTimingFunction } from './easing'
 import { fmt } from './utils'
 
@@ -192,8 +193,34 @@ export function tailwindMotion(
     if (delay) classes.push(delay)
   }
 
+  /*
+   * Scroll timelines have no named utility, but Tailwind's arbitrary-property
+   * syntax carries them verbatim. Without this the class list would quietly
+   * produce a load-time animation instead of a scroll-driven one.
+   */
+  const driver = node.timeline?.driver ?? 'time'
+  if (driver !== 'time') {
+    const decls = scrollTimelineUtilities(node.timeline!)
+    for (const d of decls) classes.push(d)
+  }
+
   classes.push(...stateClasses)
   return { classes, unsupported }
+}
+
+/** `animation-timeline` / `animation-range` as arbitrary properties. */
+function scrollTimelineUtilities(timeline: SceneTimeline): string[] {
+  const esc = (v: string) => v.replace(/ /g, '_')
+  if (timeline.driver === 'scroll') {
+    return ['[animation-timeline:scroll(root_block)]', '[animation-range:normal]']
+  }
+  const ranges: Record<string, string> = {
+    enter: 'entry 0% cover 40%',
+    contain: 'contain 0% contain 100%',
+    cover: 'cover 0% cover 100%',
+    exit: 'exit 0% exit 100%',
+  }
+  return ['[animation-timeline:view()]', `[animation-range:${esc(ranges[timeline.range])}]`]
 }
 
 /** Usage snippet shown in both Tailwind exports. */

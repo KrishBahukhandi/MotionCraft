@@ -68,6 +68,16 @@ snapping guides, Figma-style group drilling.
 **Timeline** — per-property tracks, keyframe diamonds, draggable playhead, loop, speed,
 frame stepping, ⌘-wheel zoom. Groups appear as parent rows with members nested underneath.
 
+**Scroll-driven animation** — any layer can be advanced by scroll position instead of the
+clock, compiled to `animation-timeline: view()` or `scroll()`. No IntersectionObserver, no
+scroll listener, no library. The timeline ships inside `@supports` with the plain rule left
+as a normal time-based animation, so a browser without scroll timelines plays the entrance
+on load rather than pinning the element at its first keyframe — with a scroll-driven fade,
+that difference is content visible or content gone. All twelve export formats carry it;
+Tailwind uses arbitrary properties. Previews render time-driven on purpose: a frame with
+`overflow: hidden` is a scroll container, and `view()` resolves against the nearest one, so
+a scroll-driven scene inside a card would sit at one frame forever.
+
 **Interaction states** — `:hover`, `:focus-visible`, `:active`, `:focus-within`, `:disabled`
 and `:checked` compiled to `transition`, with optional per-state timing for asymmetric
 motion (fast press, slower release). Most component motion is a state change, not a loop.

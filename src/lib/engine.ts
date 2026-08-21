@@ -253,4 +253,24 @@ export function flashWarning(node: StudioNode, duration: number): boolean {
   return false
 }
 
+/**
+ * The same scene with every node driven by time again.
+ *
+ * A preview frame uses `overflow: hidden`, which makes it a scroll container —
+ * and `view()` resolves against the nearest scroll container, so a scroll-driven
+ * scene inside a card is pinned at one frame forever. Previews therefore show
+ * the motion on the clock; the exported code keeps its timeline. Verified in
+ * Chrome: the same scene reads progress 1 at every scroll position inside an
+ * `overflow: hidden` frame, and tracks scroll correctly outside one.
+ */
+export function timeDriven(doc: Doc): Doc {
+  const strip = <T extends StudioNode>(n: T): T =>
+    n.timeline && n.timeline.driver !== 'time' ? { ...n, timeline: undefined } : n
+  return {
+    ...doc,
+    elements: doc.elements.map(strip),
+    groups: doc.groups.map(strip),
+  }
+}
+
 export { isGroup }

@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { current, isDraft } from 'immer'
+import { DEFAULT_TIMELINE } from '@/lib/types'
 import type {
   Doc,
+  SceneTimeline,
   ElementType,
   Group,
   KfRef,
@@ -172,6 +174,8 @@ export interface StudioState {
   setStateTiming: (nodeId: string, stateId: string, patch: Partial<TransitionTiming>) => void
   clearStateOverride: (nodeId: string, stateId: string, prop: string) => void
   setNodeTransition: (nodeId: string, patch: Partial<TransitionTiming>) => void
+  /** What advances this node's keyframes: the clock, or scroll position. */
+  setNodeTimeline: (nodeId: string, patch: Partial<SceneTimeline>) => void
   /** which state the canvas previews and property edits write into */
   setEditingState: (ref: { nodeId: string; stateId: string } | null) => void
 
@@ -717,6 +721,13 @@ export const useStudio = create<StudioState>()(
       set((s) => {
         const node = nodeIn(s.doc, nodeId)
         if (node) node.transition = { ...node.transition, ...patch }
+      }),
+
+    setNodeTimeline: (nodeId, patch) =>
+      set((s) => {
+        const node = nodeIn(s.doc, nodeId)
+        if (!node) return
+        node.timeline = { ...DEFAULT_TIMELINE, ...node.timeline, ...patch }
       }),
 
     setEditingState: (ref) =>

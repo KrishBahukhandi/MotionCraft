@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { TEMPLATES, type Template } from '@/lib/templates'
 import { docMarkup, docStylesheet, layoutStylesheet } from '@/lib/cssgen'
+import { timeDriven } from '@/lib/engine'
 import { buildShareUrl, encodeDoc } from '@/lib/share'
 import { useFitScale } from '@/hooks/useFitScale'
 
@@ -18,7 +19,7 @@ function TemplateCard({ template }: { template: Template }) {
   const [href, setHref] = useState('/studio')
 
   const { css, markup, width, height } = useMemo(() => {
-    const doc = template.build()
+    const doc = timeDriven(template.build())
     const prefix = `lp-${template.id}-`
     return {
       css: `${layoutStylesheet(doc, prefix)}\n${docStylesheet(

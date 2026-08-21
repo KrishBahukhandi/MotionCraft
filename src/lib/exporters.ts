@@ -51,6 +51,22 @@ function nestedStateBlocks(part: NodeCss, pad = '  '): string {
     .join('')
 }
 
+/**
+ * Scroll-timeline declarations, nested for CSS-in-JS.
+ *
+ * Both libraries support `@supports` inside a template, so the timeline travels
+ * with the component. Dropping it would silently turn a scroll-driven entrance
+ * back into one that plays on load — the animation would still run, which is
+ * exactly what makes the omission easy to miss.
+ */
+function nestedScrollBlock(part: NodeCss, pad = '  '): string {
+  if (!part.scrollDecls) return ''
+  const body = Object.entries(part.scrollDecls)
+    .map(([k, v]) => `${pad}${pad}${pad}${k}: ${v};`)
+    .join('\n')
+  return `\n${pad}@supports (animation-timeline: view()) {\n${pad}${pad}& {\n${body}\n${pad}${pad}}\n${pad}}`
+}
+
 /** Full stylesheet including the positioning rules exported markup needs. */
 function fullStylesheet(doc: Doc, opts: CssGenOptions): string {
   return `${layoutStylesheet(doc)}\n\n${docStylesheet(doc, opts)}`
@@ -229,7 +245,8 @@ const styled: ExportFormat = {
         : ''
       const trans = p.transition ? `\n  transition: ${p.transition};` : ''
       const states = nestedStateBlocks(p)
-      return `${kf}export const ${name} = styled.div\`\n${decls}${trans}${anim}${states}\n\``
+      const scroll = nestedScrollBlock(p)
+      return `${kf}export const ${name} = styled.div\`\n${decls}${trans}${anim}${states}${scroll}\n\``
     })
     return `import styled, { keyframes } from 'styled-components'\n\n${blocks.join('\n\n')}`
   },
@@ -255,7 +272,8 @@ const emotion: ExportFormat = {
         : ''
       const trans = p.transition ? `\n  transition: ${p.transition};` : ''
       const states = nestedStateBlocks(p)
-      return `${kf}export const ${name.toLowerCase()}Style = css\`\n${decls}${trans}${anim}${states}\n\``
+      const scroll = nestedScrollBlock(p)
+      return `${kf}export const ${name.toLowerCase()}Style = css\`\n${decls}${trans}${anim}${states}${scroll}\n\``
     })
     return `import { css, keyframes } from '@emotion/react'\n\n${blocks.join('\n\n')}`
   },

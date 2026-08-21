@@ -37,6 +37,30 @@ export type TriggerKind =
   | 'disabled'
   | 'checked'
 
+/**
+ * What drives a node's keyframe animation.
+ *
+ * `time` is a normal CSS animation, running on load. `view` and `scroll` compile
+ * to `animation-timeline`, where scroll position advances the animation instead
+ * of the clock — the effect nearly every "animate on scroll" library exists to
+ * provide, which CSS now does natively with no JavaScript and no observer.
+ */
+export type TimelineDriver = 'time' | 'view' | 'scroll'
+
+/**
+ * Which slice of the element's journey through the viewport the animation is
+ * mapped onto. These are the `animation-range` presets worth having; the raw
+ * property accepts far more, most of it hard to reason about.
+ */
+export type ViewRange = 'enter' | 'contain' | 'cover' | 'exit'
+
+export interface SceneTimeline {
+  driver: TimelineDriver
+  range: ViewRange
+}
+
+export const DEFAULT_TIMELINE: SceneTimeline = { driver: 'time', range: 'enter' }
+
 export interface TransitionTiming {
   /** ms */
   duration: number
@@ -71,6 +95,11 @@ export interface NodeBase {
   states: NodeState[]
   /** default transition used by the base rule (the "return" timing) */
   transition: TransitionTiming
+  /**
+   * What advances this node's keyframes. Absent means time, which is what every
+   * document created before scroll timelines existed meant.
+   */
+  timeline?: SceneTimeline
 }
 
 export interface StudioElement extends NodeBase {

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { GalleryEntry } from '@/lib/gallery'
 import { docMarkup, docStylesheet, layoutStylesheet } from '@/lib/cssgen'
+import { timeDriven } from '@/lib/engine'
 
 /**
  * Renders a gallery scene inline — real markup plus the generated stylesheet,
@@ -21,7 +22,7 @@ export function GalleryPreview({
   className?: string
 }) {
   const { css, markup, width, height } = useMemo(() => {
-    const doc = entry.build()
+    const doc = timeDriven(entry.build())
     const prefix = `g-${entry.slug}-`
     return {
       css: `${layoutStylesheet(doc, prefix)}\n${docStylesheet(

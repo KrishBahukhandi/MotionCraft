@@ -113,6 +113,31 @@ export const SEO_PAGES: SeoPage[] = [
       { question: 'Are generated animations accessible?', answer: 'MotionCraft can include a prefers-reduced-motion guard in generated output.' },
     ],
   },
+  {
+    slug: 'css-scroll-animation',
+    featured: 'fade-in-up-animation',
+    related: ['text-reveal-animation', 'card-hover-lift', 'zoom-in-animation'],
+    title: 'CSS Scroll Animation Generator — Animate On Scroll, No JavaScript | MotionCraft',
+    description: 'Build scroll-triggered CSS animations visually using animation-timeline. Animate elements as they enter the viewport, with no scroll listeners and no JavaScript library.',
+    h1: 'CSS scroll animation generator',
+    intro: 'Animate elements as the reader scrolls to them, using the browser’s own scroll timelines. No IntersectionObserver, no scroll listener, no animation library — the motion is CSS, and the browser advances it from scroll position.',
+    useCases: [
+      'Reveal sections as they enter the viewport',
+      'Tie a progress bar or parallax to page scroll',
+      'Replace an animate-on-scroll library with native CSS',
+    ],
+    steps: [
+      'Build the animation on the timeline as usual.',
+      'Set the layer’s timeline to “Scroll into view” and pick the range.',
+      'Export — the timeline ships behind @supports, with a load-time fallback.',
+    ],
+    faq: [
+      { question: 'Can you do scroll animations in CSS without JavaScript?', answer: 'Yes. animation-timeline lets scroll position drive a keyframe animation directly, so the effects that animate-on-scroll libraries provide need no JavaScript at all in browsers that support it.' },
+      { question: 'What is animation-timeline: view()?', answer: 'It maps an animation to the element’s own journey through the viewport, so the animation progresses as the element scrolls into and across the screen. animation-range then chooses which slice of that journey the animation covers.' },
+      { question: 'What happens in browsers without scroll timelines?', answer: 'MotionCraft emits the scroll timeline inside an @supports block and leaves a normal time-based animation in the plain rule. Browsers without support play the animation on load instead, so nothing is left invisible — which is the failure mode to avoid with a scroll-driven fade.' },
+      { question: 'Does it respect reduced motion?', answer: 'Yes. The generated prefers-reduced-motion guard silences scroll-driven animations along with the rest.' },
+    ],
+  },
 ]
 
 

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { docMarkup, docStylesheet, layoutStylesheet } from '@/lib/cssgen'
+import { timeDriven } from '@/lib/engine'
 import { useFitScale } from '@/hooks/useFitScale'
 import type { Template } from '@/lib/templates'
 
@@ -14,7 +15,7 @@ import type { Template } from '@/lib/templates'
  */
 export function TemplatePreview({ template, className = '' }: { template: Template; className?: string }) {
   const { css, markup, width, height } = useMemo(() => {
-    const doc = template.build()
+    const doc = timeDriven(template.build())
     const prefix = `tp-${template.id}-`
     return {
       css: `${layoutStylesheet(doc, prefix)}\n${docStylesheet(

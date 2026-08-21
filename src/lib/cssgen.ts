@@ -1,5 +1,7 @@
 import type {
   Doc,
+  SceneTimeline,
+  ViewRange,
   Group,
   NodeState,
   StudioElement,
@@ -56,6 +58,8 @@ export interface NodeCss {
   /** transition shorthand for the base rule (governs returning to rest) */
   transition: string | null
   states: StateCss[]
+  /** declarations that attach a scroll timeline, gated behind @supports */
+  scrollDecls: Record<string, string> | null
 }
 
 interface Stop {
@@ -205,6 +209,30 @@ function applyBindings(doc: Doc, node: StudioNode, decls: Record<string, string>
   return out
 }
 
+/**
+ * `animation-range` for each named preset.
+ *
+ * `entry`/`exit` describe the element crossing the viewport edge; `cover` is
+ * its whole journey across; `contain` is only the stretch where it fits
+ * entirely inside. Mapping an entrance onto `entry 0% cover 40%` is the useful
+ * default — it finishes shortly after the element is fully visible, rather than
+ * dragging on until it leaves again.
+ */
+const VIEW_RANGES: Record<ViewRange, string> = {
+  enter: 'entry 0% cover 40%',
+  contain: 'contain 0% contain 100%',
+  cover: 'cover 0% cover 100%',
+  exit: 'exit 0% exit 100%',
+}
+
+function scrollTimelineDecls(timeline: SceneTimeline | undefined): Record<string, string> | null {
+  if (!timeline || timeline.driver === 'time') return null
+  if (timeline.driver === 'scroll') {
+    return { 'animation-timeline': 'scroll(root block)', 'animation-range': 'normal' }
+  }
+  return { 'animation-timeline': 'view()', 'animation-range': VIEW_RANGES[timeline.range] }
+}
+
 export function generateNodeCss(
   node: StudioNode,
   doc: Doc,
@@ -249,7 +277,10 @@ export function generateNodeCss(
       }
     }
     keyframesBlock = `@keyframes ${animationName}${sp}{${nl}${lines.join(nl)}${nl}}`
-    const count = opts.loop ? 'infinite' : '1'
+    // A scroll-driven animation is advanced by position, so repeating it is
+    // meaningless — and the time-based fallback should settle, not loop forever.
+    const scrolled = (node.timeline?.driver ?? 'time') !== 'time'
+    const count = opts.loop && !scrolled ? 'infinite' : '1'
     animation = `${animationName} ${fmt(doc.duration)}ms linear 0ms ${count} both`
   }
 
@@ -265,6 +296,7 @@ export function generateNodeCss(
     keyframesBlock,
     transition,
     states,
+    scrollDecls: animation ? scrollTimelineDecls(node.timeline) : null,
   }
 }
 
@@ -328,6 +360,23 @@ export function docStylesheet(
     }
 
     if (p.keyframesBlock) blocks.push(p.keyframesBlock)
+
+    /*
+     * Scroll timelines go behind @supports, and the plain rule above stays a
+     * normal time-based animation. A browser without scroll-driven animations
+     * therefore still plays the entrance on load, rather than pinning the
+     * element at its first keyframe — which for a fade-in means invisible
+     * forever. Progressive enhancement is not optional here; it is the
+     * difference between a nice effect and missing content.
+     */
+    if (p.scrollDecls) {
+      const supportsBody = Object.entries(p.scrollDecls)
+        .map(([k, v]) => `${ind}${ind}${k}:${sp}${v};`)
+        .join(nl)
+      blocks.push(
+        `@supports (animation-timeline: view())${sp}{${nl}${ind}.${p.className}${sp}{${nl}${supportsBody}${nl}${ind}}${nl}}`
+      )
+    }
   }
 
   const moving = parts.filter((p) => p.animation || p.transition)

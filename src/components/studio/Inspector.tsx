@@ -18,7 +18,8 @@ import {
   TRIGGER_MAP,
   type PropDef,
 } from '@/lib/properties'
-import type { StudioElement, StudioNode } from '@/lib/types'
+import type { SceneTimeline, StudioElement, StudioNode } from '@/lib/types'
+import { DEFAULT_TIMELINE } from '@/lib/types'
 import { ColorField, NumberField, Section, Button, Select } from '@/components/ui/primitives'
 import { EasingEditor } from './EasingEditor'
 import { StatesSection } from './StatesSection'
@@ -130,8 +131,65 @@ export function Inspector() {
       />
       <MotionPathSection node={node} time={time} />
       <PropGroup node={node} time={time} group="effects" title="Effects" defaultOpen={false} />
+      <TimelineSection node={node} />
       <StatesSection node={node} />
     </div>
+  )
+}
+
+/**
+ * What advances this node's keyframes.
+ *
+ * The canvas always scrubs on time — the keyframes are the same either way, and
+ * only the exported CSS differs. Saying so here is more honest than pretending
+ * the artboard can simulate a page being scrolled.
+ */
+function TimelineSection({ node }: { node: StudioNode }) {
+  const s = useStudio
+  const tl: SceneTimeline = { ...DEFAULT_TIMELINE, ...node.timeline }
+  const animated = node.tracks.some((t) => t.keyframes.length > 0)
+
+  return (
+    <Section title="Timeline" defaultOpen={tl.driver !== 'time'}>
+      <div className="flex flex-col gap-2">
+        <Select
+          value={tl.driver}
+          onChange={(v) => s.getState().setNodeTimeline(node.id, { driver: v as SceneTimeline['driver'] })}
+          options={[
+            { value: 'time', label: 'Time — plays on load' },
+            { value: 'view', label: 'Scroll into view' },
+            { value: 'scroll', label: 'Page scroll progress' },
+          ]}
+        />
+
+        {tl.driver === 'view' && (
+          <Select
+            value={tl.range}
+            onChange={(v) => s.getState().setNodeTimeline(node.id, { range: v as SceneTimeline['range'] })}
+            options={[
+              { value: 'enter', label: 'As it enters' },
+              { value: 'contain', label: 'While fully visible' },
+              { value: 'cover', label: 'Across the whole viewport' },
+              { value: 'exit', label: 'As it leaves' },
+            ]}
+          />
+        )}
+
+        {!animated && tl.driver !== 'time' && (
+          <p className="text-[11px] leading-snug text-amber-500">
+            This node has no keyframes yet, so there is nothing for scroll to advance.
+          </p>
+        )}
+
+        {tl.driver !== 'time' && (
+          <p className="text-[11px] leading-snug text-mute">
+            Exported as <code className="font-mono">animation-timeline</code> — no JavaScript and no
+            observer. Browsers without it still play the animation on load, so nothing is left
+            invisible. The canvas keeps scrubbing on time.
+          </p>
+        )}
+      </div>
+    </Section>
   )
 }
 
