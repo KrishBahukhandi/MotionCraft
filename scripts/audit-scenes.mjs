@@ -50,6 +50,9 @@ const {
   ELEMENT_SPECS,
   EASINGS,
   DOC_VERSION,
+  relayout,
+  layoutStylesheet,
+  DEFAULT_LAYOUT,
 } = await import(
   pathToFileURL(path.join(outDir, 'scene-audit-entry.js')).href
 )
@@ -295,6 +298,36 @@ for (const preset of COMPONENT_PRESETS) {
     duration: Math.max(built.duration, 1), elements: built.elements,
     groups: built.group ? [built.group] : [], variables: [],
   })
+}
+
+// ------------------------------------------------------------- auto layout
+//
+// The solver writes positions back into the document, which is what lets the
+// canvas and the exported flexbox agree. That only holds if solving twice gives
+// the same answer — otherwise every save would drift the scene a few pixels.
+{
+  for (const t of TEMPLATES) {
+    const doc = t.build()
+    if (doc.groups.length === 0) continue
+    doc.groups[0].layout = { ...DEFAULT_LAYOUT, direction: 'column' }
+
+    relayout(doc)
+    const once = JSON.stringify(doc.elements.map((e) => [e.base.x, e.base.y, e.base.width, e.base.height]))
+    const kfOnce = JSON.stringify(doc.elements.map((e) => e.tracks.map((tr) => tr.keyframes.map((k) => k.value))))
+    relayout(doc)
+    const twice = JSON.stringify(doc.elements.map((e) => [e.base.x, e.base.y, e.base.width, e.base.height]))
+    const kfTwice = JSON.stringify(doc.elements.map((e) => e.tracks.map((tr) => tr.keyframes.map((k) => k.value))))
+
+    if (once !== twice) add(t.id, 'solver-not-idempotent', 'solving twice moves the scene', 'layout')
+    if (kfOnce !== kfTwice) add(t.id, 'keyframes-drift', 'solving twice shifts the keyframes again', 'layout')
+
+    const sheet = layoutStylesheet(doc)
+    if (!/display: flex/.test(sheet)) add(t.id, 'no-flex-emitted', 'a laid-out group did not export as flex', 'layout')
+    const groupCls = sheet.split('\n').find((l) => /display: flex/.test(l))
+    if (groupCls && /position: absolute/.test(groupCls)) {
+      add(t.id, 'flex-still-absolute', 'the flex container is still absolutely positioned', 'layout')
+    }
+  }
 }
 
 // ---------------------------------------------------------------- templates

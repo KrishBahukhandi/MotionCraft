@@ -1,10 +1,13 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { current, isDraft } from 'immer'
-import { DEFAULT_TIMELINE } from '@/lib/types'
+import { DEFAULT_LAYOUT, DEFAULT_TIMELINE } from '@/lib/types'
+import { relayout } from '@/lib/layout'
 import type {
+  AutoLayout,
   Doc,
   SceneTimeline,
+  SizeMode,
   ElementType,
   Group,
   KfRef,
@@ -176,6 +179,10 @@ export interface StudioState {
   setNodeTransition: (nodeId: string, patch: Partial<TransitionTiming>) => void
   /** What advances this node's keyframes: the clock, or scroll position. */
   setNodeTimeline: (nodeId: string, patch: Partial<SceneTimeline>) => void
+  /** Turn flow layout on or off for a group, or adjust it. `null` clears it. */
+  setGroupLayout: (groupId: string, patch: Partial<AutoLayout> | null) => void
+  /** How a child is sized inside a laid-out parent. */
+  setSizeMode: (elementId: string, axis: 'w' | 'h', mode: SizeMode) => void
   /** which state the canvas previews and property edits write into */
   setEditingState: (ref: { nodeId: string; stateId: string } | null) => void
 
@@ -217,6 +224,13 @@ function clone<T>(value: T): T {
 
 function snapshot(doc: Doc): Doc {
   return clone(doc)
+}
+
+/** True when this node sits inside — or is — a group that solves its layout. */
+function isLaidOut(doc: Doc, node: StudioNode): boolean {
+  if (isGroup(node)) return !!node.layout
+  const parent = doc.groups.find((g) => g.id === (node as StudioElement).groupId)
+  return !!parent?.layout
 }
 
 function liveIds(doc: Doc): Set<string> {
@@ -730,6 +744,29 @@ export const useStudio = create<StudioState>()(
         node.timeline = { ...DEFAULT_TIMELINE, ...node.timeline, ...patch }
       }),
 
+    setGroupLayout: (groupId, patch) => {
+      get().pushHistory()
+      set((s) => {
+        const g = s.doc.groups.find((x) => x.id === groupId)
+        if (!g) return
+        g.layout = patch === null ? undefined : { ...DEFAULT_LAYOUT, ...g.layout, ...patch }
+        // solving writes positions back, so the canvas shows the same answer
+        // the exported flexbox will produce
+        relayout(s.doc)
+      })
+    },
+
+    setSizeMode: (elementId, axis, mode) => {
+      get().pushHistory()
+      set((s) => {
+        const el = s.doc.elements.find((x) => x.id === elementId)
+        if (!el) return
+        if (axis === 'w') el.widthMode = mode
+        else el.heightMode = mode
+        relayout(s.doc)
+      })
+    },
+
     setEditingState: (ref) =>
       set((s) => {
         s.editingState = ref
@@ -807,7 +844,9 @@ export const useStudio = create<StudioState>()(
     setBaseProp: (nodeId, prop, value) =>
       set((s) => {
         const node = nodeIn(s.doc, nodeId)
-        if (node) node.base[prop] = value
+        if (!node) return
+        node.base[prop] = value
+        if (isLaidOut(s.doc, node)) relayout(s.doc)
       }),
 
     toggleKeyframe: (nodeId, prop) => {

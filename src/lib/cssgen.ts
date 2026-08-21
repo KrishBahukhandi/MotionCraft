@@ -1,4 +1,5 @@
 import type {
+  BaseProps,
   Doc,
   SceneTimeline,
   ViewRange,
@@ -89,7 +90,24 @@ export function classNames(doc: Doc, prefix = ''): Map<string, string> {
   return map
 }
 
-function buildStops(node: StudioNode, duration: number): Stop[] | null {
+/**
+ * Re-express x/y as offsets from a flow position.
+ *
+ * A child of a laid-out group is placed by flexbox, so baking its artboard
+ * coordinates into `transform` would move it twice. Subtracting the resting
+ * position leaves only what the animation is actually doing — a fade-up still
+ * translates 24px, it just does it from wherever flex put the element.
+ */
+function relativeTo(props: BaseProps, origin: BaseProps | null): BaseProps {
+  if (!origin) return props
+  return {
+    ...props,
+    x: Number(props.x ?? 0) - Number(origin.x ?? 0),
+    y: Number(props.y ?? 0) - Number(origin.y ?? 0),
+  }
+}
+
+function buildStops(node: StudioNode, duration: number, origin: BaseProps | null = null): Stop[] | null {
   const tracks = node.tracks.filter((t) => t.keyframes.length > 0)
   if (tracks.length === 0) return null
 
@@ -128,7 +146,7 @@ function buildStops(node: StudioNode, duration: number): Stop[] | null {
         timing = 'linear' // baked segment: sub-stops are linear
       }
     }
-    return { time, timing, decls: cssDecls(sampleNode(node, time), animated) }
+    return { time, timing, decls: cssDecls(relativeTo(sampleNode(node, time), origin), animated) }
   })
 }
 
@@ -240,7 +258,13 @@ export function generateNodeCss(
   opts: CssGenOptions
 ): NodeCss {
   const animationName = `${className}-anim`
-  let baseDecls = cssDecls(node.base, null)
+
+  // a child of a laid-out group is positioned by flexbox, not by coordinates
+  const parent = isGroup(node) ? undefined : doc.groups.find((g) => g.id === node.groupId)
+  const inFlow = !!parent?.layout
+  const origin = inFlow ? node.base : null
+
+  let baseDecls = cssDecls(relativeTo(node.base, origin), null)
 
   if (isGroup(node)) {
     // groups are transform-only containers laid over the artboard
@@ -252,9 +276,19 @@ export function generateNodeCss(
       baseDecls['transform-origin'] = `${fmt(bb.x + bb.w / 2)}px ${fmt(bb.y + bb.h / 2)}px`
     }
   }
+  if (inFlow && parent?.layout) {
+    // flex owns the main axis for anything not fixed, and fit-content owns hug
+    const row = parent.layout.direction === 'row'
+    const wMode = (node as StudioElement).widthMode ?? 'fixed'
+    const hMode = (node as StudioElement).heightMode ?? 'fixed'
+    if (wMode !== 'fixed') delete baseDecls['width']
+    if (hMode !== 'fixed') delete baseDecls['height']
+    if (row ? wMode === 'fill' : hMode === 'fill') delete baseDecls[row ? 'width' : 'height']
+  }
+
   baseDecls = applyBindings(doc, node, baseDecls)
 
-  const stops = buildStops(node, doc.duration)
+  const stops = buildStops(node, doc.duration, origin)
   let keyframesBlock: string | null = null
   let animation: string | null = null
 
@@ -451,15 +485,56 @@ export function docMarkup(doc: Doc, indent = '  ', prefix = ''): string {
  * entirely in each node's `transform`, so these rules only pin every node to the
  * stage origin — the generated transform does the placing.
  */
+const JUSTIFY: Record<string, string> = {
+  start: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  between: 'space-between',
+}
+const ALIGN: Record<string, string> = {
+  start: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  stretch: 'stretch',
+}
+
 export function layoutStylesheet(doc: Doc, prefix = ''): string {
   const names = classNames(doc, prefix)
   const rules: string[] = []
   for (const node of allNodes(doc)) {
     const cls = names.get(node.id)!
     if (isGroup(node)) {
-      rules.push(`.${cls} { position: absolute; inset: 0; }`)
+      if (node.layout) {
+        /*
+         * The point of the whole exercise: a laid-out group ships as flexbox,
+         * so the browser re-solves it at whatever width the real page is rather
+         * than replaying coordinates measured on a 960px artboard.
+         */
+        const l = node.layout
+        rules.push(
+          `.${cls} { display: flex; flex-direction: ${l.direction}; gap: ${fmt(l.gap)}px; ` +
+            `padding: ${fmt(l.padding)}px; align-items: ${ALIGN[l.align]}; ` +
+            `justify-content: ${JUSTIFY[l.justify]}; }`
+        )
+      } else {
+        rules.push(`.${cls} { position: absolute; inset: 0; }`)
+      }
     } else {
-      rules.push(`.${cls} { position: absolute; left: 0; top: 0; margin: 0; border: 0; }`)
+      const parent = doc.groups.find((g) => g.id === node.groupId)
+      if (parent?.layout) {
+        // in flow: the parent places it, so no absolute pinning and no baked offset
+        const decls = ['position: relative', 'margin: 0', 'border: 0']
+        const wMode = node.widthMode ?? 'fixed'
+        const hMode = node.heightMode ?? 'fixed'
+        const main = parent.layout.direction === 'row' ? wMode : hMode
+        if (main === 'fill') decls.push('flex: 1 1 0')
+        else decls.push('flex: 0 0 auto')
+        if (wMode === 'hug') decls.push('width: fit-content')
+        if (hMode === 'hug') decls.push('height: fit-content')
+        rules.push(`.${cls} { ${decls.join('; ')}; }`)
+      } else {
+        rules.push(`.${cls} { position: absolute; left: 0; top: 0; margin: 0; border: 0; }`)
+      }
     }
   }
   return rules.join('\n')

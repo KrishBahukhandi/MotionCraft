@@ -99,6 +99,14 @@ generated code and a note on why it is built that way.
 Presets that a node cannot use — a stroke preset on a rectangle, a shadow preset
 on a group — are shown unavailable rather than applied to no effect.
 
+**Auto layout** — a group can lay its children out as a flex row or column, with gap,
+padding and alignment, and children sized fixed / fill / hug. It exports as
+`display: flex` rather than absolute positions, so the scene reflows at whatever width
+the real page is instead of replaying coordinates measured on a 960px artboard. The solver
+writes positions back into the document, so the canvas, the inspector and the generated CSS
+all read one answer — and it moves each child's x/y keyframes by the same delta, so turning
+layout on does not break animations that were already there.
+
 **Nested groups** — a group is itself animatable, with its own base properties and keyframe
 tracks, and `transform-origin` computed from its subtree's bounding box. Groups nest to any
 depth and export as nested markup so transforms cascade exactly as on the canvas.
@@ -189,6 +197,7 @@ The engine in `src/lib` is dependency-free and UI-agnostic:
 | `cssparse.ts` · `cssdecompose.ts` · `cssimport.ts` | The inbound direction: read CSS back into editable nodes |
 | `exporters.ts` · `tailwind.ts` | The 12 output formats |
 | `presets.ts` · `components.ts` · `templates.ts` | 58 motion presets, 17 component presets and 10 whole scenes, as data |
+| `layout.ts` | The auto-layout solver; writes flow positions back into the document |
 | `share.ts` | Scene ⇄ URL fragment codec |
 | `SceneStage.tsx` | The scene renderer, shared by the studio canvas and the landing page |
 

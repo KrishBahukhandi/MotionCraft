@@ -18,8 +18,8 @@ import {
   TRIGGER_MAP,
   type PropDef,
 } from '@/lib/properties'
-import type { SceneTimeline, StudioElement, StudioNode } from '@/lib/types'
-import { DEFAULT_TIMELINE } from '@/lib/types'
+import type { AutoLayout, SceneTimeline, SizeMode, StudioElement, StudioNode } from '@/lib/types'
+import { DEFAULT_LAYOUT, DEFAULT_TIMELINE } from '@/lib/types'
 import { ColorField, NumberField, Section, Button, Select } from '@/components/ui/primitives'
 import { EasingEditor } from './EasingEditor'
 import { StatesSection } from './StatesSection'
@@ -131,9 +131,115 @@ export function Inspector() {
       />
       <MotionPathSection node={node} time={time} />
       <PropGroup node={node} time={time} group="effects" title="Effects" defaultOpen={false} />
+      <LayoutSection node={node} />
       <TimelineSection node={node} />
       <StatesSection node={node} />
     </div>
+  )
+}
+
+/**
+ * Flow layout for a group, and how a child sizes inside one.
+ *
+ * This is the difference between an artboard and something shippable. Without
+ * it every element exports pinned to a pixel, which cannot survive a narrower
+ * screen; with it the group exports as flexbox and the browser re-solves it at
+ * whatever width the real page turns out to be.
+ */
+function LayoutSection({ node }: { node: StudioNode }) {
+  const s = useStudio
+  const doc = useStudio((st) => st.doc)
+
+  if (isGroup(node)) {
+    const l: AutoLayout = { ...DEFAULT_LAYOUT, ...node.layout }
+    const on = !!node.layout
+    return (
+      <Section title="Auto Layout" defaultOpen={on}>
+        <div className="flex flex-col gap-2">
+          <Select
+            value={on ? l.direction : 'off'}
+            onChange={(v) =>
+              s.getState().setGroupLayout(node.id, v === 'off' ? null : { direction: v as 'row' | 'column' })
+            }
+            options={[
+              { value: 'off', label: 'Free positions' },
+              { value: 'row', label: 'Row — side by side' },
+              { value: 'column', label: 'Column — stacked' },
+            ]}
+          />
+          {on && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <NumberField
+                  label="Gap"
+                  value={l.gap}
+                  onChange={(v) => s.getState().setGroupLayout(node.id, { gap: v })}
+                />
+                <NumberField
+                  label="Padding"
+                  value={l.padding}
+                  onChange={(v) => s.getState().setGroupLayout(node.id, { padding: v })}
+                />
+              </div>
+              <Select
+                value={l.justify}
+                onChange={(v) => s.getState().setGroupLayout(node.id, { justify: v as AutoLayout['justify'] })}
+                options={[
+                  { value: 'start', label: 'Pack to start' },
+                  { value: 'center', label: 'Pack to centre' },
+                  { value: 'end', label: 'Pack to end' },
+                  { value: 'between', label: 'Space between' },
+                ]}
+              />
+              <Select
+                value={l.align}
+                onChange={(v) => s.getState().setGroupLayout(node.id, { align: v as AutoLayout['align'] })}
+                options={[
+                  { value: 'start', label: 'Align start' },
+                  { value: 'center', label: 'Align centre' },
+                  { value: 'end', label: 'Align end' },
+                  { value: 'stretch', label: 'Stretch to fill' },
+                ]}
+              />
+              <p className="text-[11px] leading-snug text-mute">
+                Exports as <code className="font-mono">display: flex</code> instead of absolute
+                positions, so it reflows at any width. The canvas shows the solved result.
+              </p>
+            </>
+          )}
+        </div>
+      </Section>
+    )
+  }
+
+  const el = node as StudioElement
+  const parent = doc.groups.find((g) => g.id === el.groupId)
+  if (!parent?.layout) return null
+
+  const modes: { value: SizeMode; label: string }[] = [
+    { value: 'fixed', label: 'Fixed' },
+    { value: 'fill', label: 'Fill' },
+    { value: 'hug', label: 'Hug' },
+  ]
+  return (
+    <Section title="Sizing" defaultOpen>
+      <div className="grid grid-cols-2 gap-2">
+        <Select
+          value={el.widthMode ?? 'fixed'}
+          onChange={(v) => s.getState().setSizeMode(el.id, 'w', v as SizeMode)}
+          options={modes.map((m) => ({ ...m, label: `W: ${m.label}` }))}
+        />
+        <Select
+          value={el.heightMode ?? 'fixed'}
+          onChange={(v) => s.getState().setSizeMode(el.id, 'h', v as SizeMode)}
+          options={modes.map((m) => ({ ...m, label: `H: ${m.label}` }))}
+        />
+      </div>
+      <p className="mt-2 text-[11px] leading-snug text-mute">
+        Fill takes the leftover space in <span className="text-ink/70">{parent.name}</span>; hug
+        shrinks to the content.
+      </p>
+    </Section>
   )
 }
 
