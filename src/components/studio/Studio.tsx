@@ -8,6 +8,7 @@ import {
   CreditCard,
   Image,
   Layers,
+  LayoutTemplate,
   Monitor,
   Moon,
   MousePointerClick,
@@ -38,6 +39,7 @@ import { CodePanel } from './CodePanel'
 import { PresetsPanel } from './PresetsPanel'
 import { LayersPanel } from './LayersPanel'
 import { ComponentsPanel } from './ComponentsPanel'
+import { TemplatesPanel } from './TemplatesPanel'
 import { DevicePreview } from './DevicePreview'
 import { CommandPalette } from './CommandPalette'
 import { ImportDialog } from './ImportDialog'
@@ -213,6 +215,7 @@ export function Studio() {
                 { id: 'layers' as const, label: <span className="inline-flex items-center gap-1"><Layers size={10} /> Layers</span> },
                 { id: 'presets' as const, label: <span className="inline-flex items-center gap-1"><Sparkles size={10} /> Motion</span> },
                 { id: 'components' as const, label: <span className="inline-flex items-center gap-1"><Blocks size={10} /> Parts</span> },
+                { id: 'templates' as const, label: <span className="inline-flex items-center gap-1"><LayoutTemplate size={10} /> Scenes</span> },
               ]}
               value={leftTab}
               onChange={(t) => s.getState().setLeftTab(t)}
@@ -223,6 +226,8 @@ export function Studio() {
               <LayersPanel />
             ) : leftTab === 'presets' ? (
               <PresetsPanel />
+            ) : leftTab === 'templates' ? (
+              <TemplatesPanel />
             ) : (
               <ComponentsPanel />
             )}

@@ -94,7 +94,7 @@ export interface StudioState {
   // viewports / panels
   canvas: { zoom: number; x: number; y: number }
   tlZoom: number
-  leftTab: 'layers' | 'presets' | 'components'
+  leftTab: 'layers' | 'presets' | 'components' | 'templates'
   rightTab: 'inspect' | 'code'
   expanded: Record<string, boolean>
   device: DeviceState
@@ -136,7 +136,7 @@ export interface StudioState {
 
   setCanvasView: (v: Partial<{ zoom: number; x: number; y: number }>) => void
   setTlZoom: (z: number) => void
-  setLeftTab: (t: 'layers' | 'presets' | 'components') => void
+  setLeftTab: (t: StudioState['leftTab']) => void
   setRightTab: (t: 'inspect' | 'code') => void
   toggleExpanded: (id: string) => void
   setDevice: (d: Partial<DeviceState>) => void
@@ -192,6 +192,8 @@ export interface StudioState {
 
   /** Applies to every selected node that can use it; returns how many were changed. */
   applyPreset: (preset: Preset) => number
+  /** Replace the scene with a template. History first, so it is one undo away. */
+  loadTemplate: (doc: Doc) => void
   insertComponent: (preset: ComponentPreset) => void
   applyImport: (result: ImportResult) => void
   loadSharedDoc: (doc: Doc) => void
@@ -936,6 +938,22 @@ export const useStudio = create<StudioState>()(
         for (const el of result.elements) s.expanded[el.id] = true
         s.editingState = null
         s.time = 0
+      })
+    },
+
+    /**
+     * Swap in a whole template. Same contract as opening a shared scene: the
+     * work that was on the canvas is one undo away, not gone.
+     */
+    loadTemplate: (incoming) => {
+      get().pushHistory()
+      set((s) => {
+        s.doc = incoming
+        s.selection = []
+        s.selectedKf = null
+        s.editingState = null
+        s.time = 0
+        s.expanded = {}
       })
     },
 

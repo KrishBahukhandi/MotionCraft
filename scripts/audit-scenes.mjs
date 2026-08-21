@@ -8,8 +8,8 @@
  * exporter could emit. Each looked right in the editor and was wrong in the
  * code people copied, which is the failure mode worth automating away.
  *
- * Covers all three sources: the 58 motion presets, the 17 component presets,
- * and every gallery scene assembled from them.
+ * Covers every source: the motion presets, the component presets, the whole
+ * scene templates, and every gallery page assembled from them.
  *
  *   npm run audit
  */
@@ -45,6 +45,7 @@ const {
   presetApplies,
   COMPONENT_PRESETS,
   buildComponent,
+  TEMPLATES,
   createElement,
   ELEMENT_SPECS,
   EASINGS,
@@ -296,9 +297,30 @@ for (const preset of COMPONENT_PRESETS) {
   })
 }
 
+// ---------------------------------------------------------------- templates
+for (const t of TEMPLATES) {
+  const doc = t.build()
+  auditDoc(t.id, 'template', doc)
+  if (doc.elements.length < 4) add(t.id, 'too-simple', `${doc.elements.length} elements — that is a component, not a scene`, 'template')
+  const orphans = doc.elements.filter((e) => e.groupId && !doc.groups.some((g) => g.id === e.groupId))
+  if (orphans.length) add(t.id, 'orphan-element', `${orphans.length} element(s) point at a missing group`, 'template')
+  // a scene should read as a sequence, not a simultaneous flash
+  const starts = new Set(
+    doc.elements.flatMap((e) => e.tracks.flatMap((tr) => tr.keyframes.map((k) => k.time)))
+  )
+  if (doc.elements.length > 4 && starts.size < 3) {
+    add(t.id, 'no-choreography', 'every element moves on the same beat', 'template')
+  }
+  const outside = doc.elements.flatMap((e) =>
+    e.tracks.flatMap((tr) => tr.keyframes.filter((k) => k.time > doc.duration).map(() => e.name))
+  )
+  if (outside.length) add(t.id, 'keyframe-past-end', `${outside.length} keyframe(s) past ${doc.duration}ms`, 'template')
+}
+
 console.log(
-  `\naudited ${PRESETS.length} motion presets, ${COMPONENT_PRESETS.length} component presets ` +
-    `and ${GALLERY.length} gallery scenes — ${nodes} animated nodes, ${tracks} tracks\n`
+  `\naudited ${PRESETS.length} motion presets, ${COMPONENT_PRESETS.length} component presets, ` +
+    `${TEMPLATES.length} templates and ${GALLERY.length} gallery scenes — ` +
+    `${nodes} animated nodes, ${tracks} tracks\n`
 )
 if (findings.length === 0) {
   console.log('no findings')

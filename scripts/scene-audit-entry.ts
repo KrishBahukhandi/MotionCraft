@@ -14,8 +14,9 @@ export {
   OFFSET_KEYS,
 } from '@/lib/properties'
 export { allNodes, sampleNode, isGroup } from '@/lib/engine'
-export { docStylesheet } from '@/lib/cssgen'
+export { docStylesheet, docMarkup, layoutStylesheet } from '@/lib/cssgen'
 export { PRESETS, presetTracks, presetApplies } from '@/lib/presets'
 export { COMPONENT_PRESETS, buildComponent } from '@/lib/components'
+export { TEMPLATES } from '@/lib/templates'
 export { createElement, ELEMENT_SPECS, makeGroup, DEFAULT_TRANSITION, DOC_VERSION } from '@/lib/elements'
 export { EASINGS, needsBaking } from '@/lib/easing'

@@ -35,6 +35,8 @@ import { docStylesheet } from '@/lib/cssgen'
 import { GalleryPreview } from '@/components/gallery/GalleryPreview'
 import { HeroStudio } from './HeroStudio'
 import { PasteCss } from './PasteCss'
+import { TemplateShowcase } from './TemplateShowcase'
+import { TEMPLATES } from '@/lib/templates'
 import { Kbd } from '@/components/ui/primitives'
 import { Seo } from '@/components/Seo'
 
@@ -299,6 +301,37 @@ export function Landing() {
               </Link>
             ))}
           </div>
+        </FadeIn>
+      </section>
+
+      {/*
+        Whole scenes, not single animations. The gallery above hands you one
+        moving element; this hands you a laid-out screen whose parts arrive in
+        order — the part that is tedious to choreograph by hand.
+      */}
+      <section id="scenes" className="mx-auto max-w-6xl px-5 py-24">
+        <FadeIn>
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+            Or start from a <span className="mc-gradient-text">whole scene.</span>
+          </h2>
+        </FadeIn>
+        <FadeIn>
+          <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-mute">
+            {TEMPLATES.length} designed layouts — heroes, pricing tables, forms, toasts — already
+            choreographed. Open one, change the copy and colours, export the CSS.
+          </p>
+        </FadeIn>
+        <FadeIn className="mt-10">
+          <TemplateShowcase />
+        </FadeIn>
+        <FadeIn className="mt-8">
+          <Link
+            to="/studio"
+            className="inline-flex items-center gap-2 text-[15px] font-semibold text-accent hover:underline"
+          >
+            All {TEMPLATES.length} scenes are in the editor
+            <ArrowRight size={16} />
+          </Link>
         </FadeIn>
       </section>
 

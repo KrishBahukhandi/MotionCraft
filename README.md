@@ -72,6 +72,12 @@ frame stepping, ⌘-wheel zoom. Groups appear as parent rows with members nested
 and `:checked` compiled to `transition`, with optional per-state timing for asymmetric
 motion (fast press, slower release). Most component motion is a state change, not a loop.
 
+**10 scene templates** — a hero, a pricing table, a feature grid, a testimonial, a
+stat row, a toast stack, a sign-in card, an onboarding screen, a product card and a
+loading screen. Not one animation on one box: a laid-out scene whose elements enter in
+a deliberate order, ready to edit or export. Choreography is the tedious part to build
+by hand, because it is a dozen animations offset against each other rather than one.
+
 **17 component presets** — buttons that hover and press, tabs with a sliding indicator,
 accordions, navbars, modals, dropdowns, tooltips, toasts, skeletons, spinners and text
 reveals, inserted with their motion wired. Multi-part presets come grouped, and the navbar
@@ -172,7 +178,7 @@ The engine in `src/lib` is dependency-free and UI-agnostic:
 | `cssgen.ts` | `@keyframes` and state-rule generation, variable bindings, markup emission |
 | `cssparse.ts` · `cssdecompose.ts` · `cssimport.ts` | The inbound direction: read CSS back into editable nodes |
 | `exporters.ts` · `tailwind.ts` | The 12 output formats |
-| `presets.ts` · `components.ts` | 58 motion presets and 17 component presets, as data |
+| `presets.ts` · `components.ts` · `templates.ts` | 58 motion presets, 17 component presets and 10 whole scenes, as data |
 | `share.ts` | Scene ⇄ URL fragment codec |
 | `SceneStage.tsx` | The scene renderer, shared by the studio canvas and the landing page |
 

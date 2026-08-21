@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pause, Play, SquareArrowOutUpRight } from 'lucide-react'
 import { SceneNodes } from '@/components/studio/SceneStage'
 import { allNodes, sampleNode } from '@/lib/engine'
@@ -13,30 +6,12 @@ import { transformOf } from '@/lib/properties'
 import { findGalleryEntry } from '@/lib/gallery'
 import { buildShareUrl, encodeDoc } from '@/lib/share'
 import { clamp, fmt } from '@/lib/utils'
+import { useFitScale } from '@/hooks/useFitScale'
 import type { Doc } from '@/lib/types'
-
-/** `useLayoutEffect` warns during SSR; the hero is prerendered. */
-const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 const SCENES = ['elastic-entrance', 'text-reveal-animation', 'svg-line-draw-animation', 'css-loading-spinner']
   .map((slug) => findGalleryEntry(slug))
   .filter((e): e is NonNullable<typeof e> => !!e)
-
-/** Scales the artboard into whatever width the column gives it. */
-function useFitScale(docWidth: number) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-  useIsoLayoutEffect(() => {
-    const node = ref.current
-    if (!node) return
-    const measure = () => setScale(node.clientWidth / docWidth)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(node)
-    return () => ro.disconnect()
-  }, [docWidth])
-  return { ref, scale }
-}
 
 /** Upgrades the plain `/studio` href into one carrying this exact scene. */
 function useSceneLink(doc: Doc): string {
