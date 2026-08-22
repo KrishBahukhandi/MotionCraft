@@ -13,7 +13,7 @@ export {
   MASK_KEYS,
   OFFSET_KEYS,
 } from '@/lib/properties'
-export { allNodes, sampleNode, isGroup } from '@/lib/engine'
+export { allNodes, sampleNode, isGroup, groupBBox } from '@/lib/engine'
 export { docStylesheet, docMarkup, layoutStylesheet } from '@/lib/cssgen'
 export { PRESETS, presetTracks, presetApplies } from '@/lib/presets'
 export { COMPONENT_PRESETS, buildComponent } from '@/lib/components'
@@ -25,3 +25,7 @@ export { relayout, solveGroup } from '@/lib/layout'
 export { DEFAULT_LAYOUT } from '@/lib/types'
 export { slugify } from '@/lib/utils'
 export { sceneAnatomy, performanceNote, timingNote, easingNote, accessibilityNote } from '@/lib/anatomy'
+export { SEO_PAGES } from '@/components/landing/SeoLandingPage'
+export { galleryEntryTitle } from '@/components/gallery/GalleryEntryPage'
+export { templateTitle } from '@/components/templates/TemplateEntryPage'
+export { transformOf } from '@/lib/properties'

@@ -184,7 +184,11 @@ studio's own `SceneNodes`, sampled by the same engine the canvas uses, with a dr
 playhead and a live read-out of the computed `transform`. The code panel below it is
 `docStylesheet` run over that same scene, so neither can drift from what the tool does.
 
-`npm run og` regenerates `public/og-image.png`. It is kept out of `build` on purpose —
+`npm run og` regenerates the social cards — the site-wide one and a per-page card for each
+of the 92 gallery, template and keyword pages. Each carries its own title and a drawing of
+the scene at its most legible frame, taken from the same document the page renders, so a
+share of one animation no longer looks identical to a share of every other. Commit the
+result. It is kept out of `build` on purpose —
 `sharp` is a native dependency and shouldn't be able to break a deploy.
 
 ## Checking the gallery

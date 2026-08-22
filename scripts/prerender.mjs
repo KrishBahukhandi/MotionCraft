@@ -116,6 +116,27 @@ function withPageMetadata(html, page) {
     out = replaceOne(out, pattern, (_m, open, close) => `${open}${escapeAttr(value)}${close}`, label)
   }
 
+  /*
+   * Each page points at its own social card. Ninety-odd pages previously shared
+   * one image, so every share of every animation looked identical — and a share
+   * is the step before the link that actually counts.
+   */
+  if (page.card) {
+    const image = `https://motioncraft.bahukhandi-labs.com/og/${page.card}.png`
+    for (const [pattern, label] of [
+      [/(<meta\s+property="og:image"\s+content=")[^"]*("\s*\/?>)/, 'og:image'],
+      [/(<meta\s+name="twitter:image"\s+content=")[^"]*("\s*\/?>)/, 'twitter:image'],
+    ]) {
+      out = replaceOne(out, pattern, (_m, open, close) => `${open}${image}${close}`, label)
+    }
+    out = replaceOne(
+      out,
+      /(<meta\s+property="og:image:alt"\s+content=")[^"]*("\s*\/?>)/,
+      (_m, open, close) => `${open}${escapeAttr(page.title.split('—')[0].trim())}${close}`,
+      'og:image:alt'
+    )
+  }
+
   return replaceOne(
     out,
     /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
@@ -130,6 +151,7 @@ writeFileSync(templatePath, homepage)
 
 for (const page of SEO_PAGES) {
   page.crumbs = [{ name: 'Home', path: '/' }, { name: page.h1 ?? page.title }]
+  page.card = `page-${page.slug}`
   const routeHtml = render(`/${page.slug}`)
   const out = withPageMetadata(template.replace(marker, `<div id="root">${routeHtml}</div>`), page)
   const routeDir = path.join(root, 'dist', page.slug)
@@ -228,6 +250,7 @@ writePage('/gallery', 'gallery', {
   description: GALLERY_DESCRIPTION,
   faq: [],
   crumbs: [{ name: 'Home', path: '/' }, { name: 'Gallery' }],
+  card: 'page-gallery',
 })
 
 for (const item of GALLERY) {
@@ -241,6 +264,7 @@ for (const item of GALLERY) {
       { name: 'Gallery', path: '/gallery' },
       { name: item.title },
     ],
+    card: `gallery-${item.slug}`,
   })
 }
 
@@ -254,6 +278,7 @@ writePage('/templates', 'templates', {
   description: TEMPLATES_DESCRIPTION,
   faq: [],
   crumbs: [{ name: 'Home', path: '/' }, { name: 'Templates' }],
+  card: 'page-templates',
 })
 
 for (const t of TEMPLATES) {
@@ -267,6 +292,7 @@ for (const t of TEMPLATES) {
       { name: 'Templates', path: '/templates' },
       { name: t.name },
     ],
+    card: `templates-${t.slug}`,
   })
 }
 
