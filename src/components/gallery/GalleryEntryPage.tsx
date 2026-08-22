@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowRight, Check, ChevronLeft, Copy, Lightbulb } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { Seo } from '@/components/Seo'
+import { SceneAnatomy } from './SceneAnatomy'
 import { CodeBlock } from '@/lib/highlight'
 import { findGalleryEntry, relatedEntries, type GalleryEntry } from '@/lib/gallery'
 import { EXPORT_FORMATS, getFormat } from '@/lib/exporters'
@@ -173,6 +174,8 @@ export function GalleryEntryPage() {
           </h2>
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-mute">{entry.note}</p>
         </section>
+
+        <SceneAnatomy doc={entry.build()} />
 
         {related.length > 0 && (
           <section className="mt-12">

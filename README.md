@@ -193,6 +193,11 @@ playhead and a live read-out of the computed `transform`. The code panel below i
 npm run audit
 ```
 
+It also checks generated prose. `src/lib/anatomy.ts` derives what each gallery page says
+about its animation — the properties it touches, what each costs the browser, the curves in
+play — and anything auto-written that lands identically on a fifth of the gallery is
+boilerplate wearing a data costume, so the audit fails on it.
+
 Presets and scenes are data, so they can be wrong in ways that still compile and
 still look right in the editor: a property animated on an element type that
 ignores it, a track that holds one value, an easing id that silently degrades to

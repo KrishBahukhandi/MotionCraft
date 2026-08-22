@@ -54,6 +54,11 @@ const {
   layoutStylesheet,
   DEFAULT_LAYOUT,
   slugify,
+  sceneAnatomy,
+  performanceNote,
+  timingNote,
+  easingNote,
+  accessibilityNote,
 } = await import(
   pathToFileURL(path.join(outDir, 'scene-audit-entry.js')).href
 )
@@ -203,6 +208,38 @@ for (const entry of GALLERY) auditDoc(entry.slug, 'gallery', entry.build())
       add(e.slug, 'thin-note', `note is ${String(e.note).trim().length} chars`, 'prose')
     }
     if (e.tags.length < 2) add(e.slug, 'thin-tags', `${e.tags.length} tag(s)`, 'prose')
+  }
+
+  /*
+   * Generated prose is only worth having while it stays specific.
+   *
+   * The first version of the performance note was one sentence shared by
+   * fifty-two of seventy-three pages — longer pages, and more alike, which is
+   * the opposite of the point. Anything auto-written that lands identically on
+   * a large slice of the gallery is boilerplate wearing a data costume.
+   */
+  {
+    const blocks = new Map()
+    for (const e of GALLERY) {
+      const a = sceneAnatomy(e.build())
+      for (const [name, fn] of [
+        ['performance', performanceNote],
+        ['timing', timingNote],
+        ['easing', easingNote],
+        ['accessibility', accessibilityNote],
+      ]) {
+        const text = fn(a)
+        if (!text) continue
+        const key = `${name}\u0000${text}`
+        blocks.set(key, (blocks.get(key) ?? 0) + 1)
+      }
+    }
+    const limit = Math.max(8, Math.ceil(GALLERY.length * 0.2))
+    for (const [key, count] of blocks) {
+      if (count <= limit) continue
+      const [name, text] = key.split('\u0000')
+      add('(gallery)', 'boilerplate-note', `the ${name} note is identical on ${count} of ${GALLERY.length} pages: "${text.slice(0, 60)}…"`, 'prose')
+    }
   }
 
   // near-duplicates: different words, same page
